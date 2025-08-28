@@ -23,7 +23,7 @@ export const usePredictions = () => {
       if (response.success && response.data) {
         setPredictions(response.data);
         
-        // 如果还没有选中的股票，自动选择第一个
+        // 如果还没有选中的标的，自动选择第一个
         if (!selectedSymbol) {
           const firstSymbol = Object.keys(response.data)[0];
           if (firstSymbol) {

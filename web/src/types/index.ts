@@ -1,5 +1,5 @@
-// 股票预测数据类型定义
-export interface StockPrediction {
+// K线预测数据类型定义
+export interface KlinePrediction {
   symbol: string;
   name: string;
   updated_at_utc: string;
@@ -12,7 +12,7 @@ export interface StockPrediction {
 
 // 多标的预测数据类型
 export interface PredictionsData {
-  [symbol: string]: StockPrediction;
+  [symbol: string]: KlinePrediction;
 }
 
 // API响应类型
@@ -38,7 +38,7 @@ export interface StockSelectorProps {
 }
 
 export interface PredictionDetailProps {
-  prediction: StockPrediction | null;
+  prediction: KlinePrediction | null;
   loading: boolean;
 }
 

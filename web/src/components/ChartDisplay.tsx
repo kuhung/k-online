@@ -54,14 +54,9 @@ export const ChartDisplay: React.FC<ChartDisplayProps> = ({
     <>
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <BarChart3 className="w-5 h-5 text-gray-600" />
-            <h3 className="text-lg font-semibold text-gray-900">预测图表</h3>
-            <span className="text-sm text-gray-500">({symbol})</span>
-          </div>
           <button
             onClick={handleFullscreen}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+            className="p-2 ml-auto text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
             title="全屏查看"
           >
             <Maximize2 className="w-5 h-5" />
@@ -78,25 +73,25 @@ export const ChartDisplay: React.FC<ChartDisplayProps> = ({
         </div>
         
         <div className="mt-4 text-sm text-gray-500 text-center">
-          <p>* 图表显示了股票价格的历史数据和预测趋势</p>
+          <p>* 图表显示了标的价格的历史数据和预测趋势</p>
         </div>
       </div>
 
       {/* 全屏模态框 */}
       {isFullscreen && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4">
-          <div className="relative max-w-6xl max-h-full">
+          <div className="relative w-screen h-screen flex items-center justify-center">
             <button
               onClick={handleFullscreen}
               className="absolute top-4 right-4 z-10 p-2 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-75 transition-colors"
               title="关闭全屏"
             >
-              <Maximize2 className="w-6 h-6" />
+              <Maximize2 className="w-6 h-6 rotate-45" />
             </button>
             <img
               src={imageUrl}
               alt={`${symbol} 预测图表`}
-              className="max-w-full max-h-full object-contain rounded-lg"
+              className="w-full h-full object-contain"
               onError={handleImageError}
             />
           </div>

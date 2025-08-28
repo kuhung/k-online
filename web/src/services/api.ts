@@ -6,7 +6,7 @@ class ApiService {
   }
 
   /**
-   * 获取所有股票预测数据
+   * 获取所有K线预测数据
    */
   async fetchPredictions(): Promise<ApiResponse<PredictionsData>> {
     try {
@@ -33,11 +33,11 @@ class ApiService {
   }
 
   /**
-   * 获取单个股票的预测数据
+   * 获取单个标的的预测数据
    */
-  async fetchPredictionBySymbol(symbol: string): Promise<ApiResponse<any>> {
+  async fetchPredictionBySymbol(symbol: string): Promise<ApiResponse<KlinePrediction>> {
     try {
-      // 这里可以实现获取单个股票数据的逻辑
+      // 这里可以实现获取单个标的数据的逻辑
       const allPredictions = await this.fetchPredictions();
       
       if (!allPredictions.success || !allPredictions.data) {
