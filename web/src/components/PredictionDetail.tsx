@@ -1,7 +1,7 @@
 import React from 'react';
 import { Calendar, TrendingUp, TrendingDown, Database, RefreshCw } from 'lucide-react';
 import { PredictionDetailProps } from '@/types';
-import { formatDateTime, formatCurrency, formatPercentage, getDirectionColor, cn } from '@/utils';
+import { formatDateTime, formatPercentage, getDirectionColor, cn } from '@/utils';
 import { LoadingSpinner } from './LoadingSpinner';
 
 export const PredictionDetail: React.FC<PredictionDetailProps> = ({
