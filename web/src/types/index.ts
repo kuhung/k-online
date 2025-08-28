@@ -3,8 +3,6 @@ export interface StockPrediction {
   symbol: string;
   name: string;
   updated_at_utc: string;
-  predicted_close: number;
-  actual_close: number;
   direction: 'Up' | 'Down';
   upside_probability: string;
   volatility_amplification_probability: string;

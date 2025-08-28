@@ -27,13 +27,6 @@ export function formatDateTime(dateString: string): string {
 }
 
 /**
- * 格式化数字为货币格式
- */
-export function formatCurrency(value: number, currency = '¥'): string {
-  return `${currency}${value.toFixed(2)}`;
-}
-
-/**
  * 格式化百分比
  */
 export function formatPercentage(value: string): string {

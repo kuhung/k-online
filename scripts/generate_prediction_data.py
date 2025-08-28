@@ -19,7 +19,12 @@ from model import KronosTokenizer, Kronos, KronosPredictor
 # --- Configuration ---
 Config = {
     "MODEL_PATH": "../examples/my_kronos_cache",
-    "SYMBOL": 'BTCUSDT',
+    "SYMBOL": 'BTCUSDT',  # 保持原有的单一标的配置
+    "TARGET_SYMBOLS": ['BTCUSDT', 'ETHUSDT'],  # 添加 ETHUSDT
+    "SYMBOL_NAMES": {  # 标的名称映射
+        'BTCUSDT': '比特币 / USDT',
+        'ETHUSDT': '以太坊 / USDT',
+    },
     "INTERVAL": '1h',
     "HIST_POINTS": 360,
     "PRED_HORIZON": 24,
@@ -32,8 +37,22 @@ Config = {
 def load_model():
     """Loads the Kronos model and tokenizer."""
     print("Loading Kronos model...")
-    tokenizer = KronosTokenizer.from_pretrained("NeoQuasar/Kronos-Tokenizer-base", cache_dir=Config["MODEL_PATH"])
-    model = Kronos.from_pretrained("NeoQuasar/Kronos-small", cache_dir=Config["MODEL_PATH"])
+    try:
+        # 尝试从本地缓存加载
+        cache_dir = Path(Config["MODEL_PATH"])
+        tokenizer_path = cache_dir / "models--NeoQuasar--Kronos-Tokenizer-base/snapshots/f6c7de7b0490e422fde7a44bc73369e07115c445"
+        model_path = cache_dir / "models--NeoQuasar--Kronos-small/snapshots/12b79908b3a9bef41ad5db0e01746f9a2fd2d882"
+        
+        print(f"Loading tokenizer from {tokenizer_path}")
+        tokenizer = KronosTokenizer.from_pretrained(tokenizer_path)
+        print(f"Loading model from {model_path}")
+        model = Kronos.from_pretrained(model_path)
+    except Exception as e:
+        print(f"Failed to load from cache: {e}")
+        print("Attempting to download from Hugging Face...")
+        tokenizer = KronosTokenizer.from_pretrained("NeoQuasar/Kronos-Tokenizer-base", cache_dir=Config["MODEL_PATH"])
+        model = Kronos.from_pretrained("NeoQuasar/Kronos-small", cache_dir=Config["MODEL_PATH"])
+    
     tokenizer.eval()
     model.eval()
     predictor = KronosPredictor(model, tokenizer, device="cpu", max_context=512)
@@ -83,13 +102,13 @@ def make_prediction(df, predictor):
     return close_preds_main, volume_preds_main, close_preds_volatility
 
 
-def fetch_binance_data():
+def fetch_binance_data(symbol: str):
     """Fetches K-line data from the Binance public API."""
-    symbol, interval = Config["SYMBOL"], Config["INTERVAL"]
+    interval = Config["INTERVAL"]
     limit = Config["HIST_POINTS"] + Config["VOL_WINDOW"]
 
     print(f"Fetching {limit} bars of {symbol} {interval} data from Binance...")
-    client = Client()
+    client = Client(tld='us')  # 使用 Binance US API
     klines = client.get_klines(symbol=symbol, interval=interval, limit=limit)
 
     cols = ['open_time', 'open', 'high', 'low', 'close', 'volume', 'close_time',
@@ -187,10 +206,10 @@ def create_plot(hist_df, close_preds_df, volume_preds_df):
     return img_base64
 
 
-def main_task(model):
-    """Executes one full update cycle."""
-    print("\n" + "=" * 60 + f"\nStarting update task at {datetime.now(timezone.utc)}\n" + "=" * 60)
-    df_full = fetch_binance_data()
+def main_task(model, symbol: str):
+    """Executes one full update cycle for a given symbol."""
+    print("\n" + "=" * 60 + f"\nStarting update task for {symbol} at {datetime.now(timezone.utc)}\n" + "=" * 60)
+    df_full = fetch_binance_data(symbol)
     df_for_model = df_full.iloc[:-1]
 
     close_preds, volume_preds, v_close_preds = make_prediction(df_for_model, model)
@@ -211,7 +230,16 @@ def main_task(model):
     # --- 内存清理结束 ---
 
     print("-" * 60 + "\n--- Task completed successfully ---\n" + "-" * 60 + "\n")
-    return upside_prob, vol_amp_prob, chart_base64
+    return {
+        "symbol": symbol,
+        "name": Config["SYMBOL_NAMES"].get(symbol, symbol),
+        "updated_at_utc": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC'),
+        "direction": "Up" if upside_prob >= 0.5 else "Down",
+        "upside_probability": f"{upside_prob:.1%}",
+        "volatility_amplification_probability": f"{vol_amp_prob:.1%}",
+        "chart_image_base64": chart_base64,
+        "data_source": "Binance API"
+    }
 
 
 # Global variable to store the loaded model
@@ -228,21 +256,19 @@ def generate_and_save_prediction_data():
         _loaded_predictor = load_model()
 
     print("Executing main prediction task for data generation.")
-    upside_prob, vol_amp_prob, chart_base64 = main_task(_loaded_predictor)
+    
+    all_predictions = {}
+    for symbol in Config["TARGET_SYMBOLS"]:
+        prediction_data = main_task(_loaded_predictor, symbol)
+        all_predictions[symbol] = prediction_data
 
-    prediction_data = {
-        "upside_probability": f"{upside_prob:.1%}",
-        "volatility_amplification_probability": f"{vol_amp_prob:.1%}",
-        "chart_image_base64": chart_base64,
-        "updated_at_utc": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
-    }
-    return prediction_data
+    return all_predictions
 
 if __name__ == '__main__':
     import json
     # For local testing, generate and save data
     data = generate_and_save_prediction_data()
-    output_path = Path("web/public/latest_prediction.json")
+    output_path = Path("web/public/predictions.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, 'w') as f:
         json.dump(data, f, indent=4)

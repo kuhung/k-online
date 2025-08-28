@@ -30,18 +30,6 @@ export const PredictionDetail: React.FC<PredictionDetailProps> = ({
 
   const metrics = [
     {
-      label: '预测收盘价',
-      value: formatCurrency(prediction.predicted_close),
-      icon: TrendingUp,
-      color: 'text-blue-600',
-    },
-    {
-      label: '实际收盘价',
-      value: formatCurrency(prediction.actual_close),
-      icon: Database,
-      color: 'text-gray-600',
-    },
-    {
       label: '上涨概率',
       value: formatPercentage(prediction.upside_probability),
       icon: TrendingUp,

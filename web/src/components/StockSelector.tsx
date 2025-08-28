@@ -65,9 +65,6 @@ export const StockSelector: React.FC<StockSelectorProps> = ({
                     <span className="text-sm text-gray-600">{prediction.name}</span>
                   </div>
                   <div className="flex items-center space-x-4 mt-1">
-                    <span className="text-sm text-gray-500">
-                      预测: ¥{prediction.predicted_close.toFixed(2)}
-                    </span>
                     <div className={cn('flex items-center space-x-1', getDirectionColor(prediction.direction))}>
                       {prediction.direction === 'Up' ? (
                         <TrendingUp className="w-4 h-4" />
