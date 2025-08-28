@@ -1,4 +1,4 @@
-import { PredictionsData, ApiResponse } from '@/types';
+import { PredictionsData, ApiResponse, KlinePrediction } from '@/types';
 
 class ApiService {
   constructor() {
@@ -41,7 +41,11 @@ class ApiService {
       const allPredictions = await this.fetchPredictions();
       
       if (!allPredictions.success || !allPredictions.data) {
-        return allPredictions;
+        // 返回一个明确的 KlinePrediction 错误类型
+        return {
+          success: false,
+          error: allPredictions.error || 'Failed to fetch all predictions.',
+        };
       }
       
       const prediction = allPredictions.data[symbol];
