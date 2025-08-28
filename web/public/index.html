@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-Online Prediction</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <img src="img/logo.png" alt="K-Online Logo" class="logo">
+            <h1>K-Online Stock Prediction</h1>
+        </div>
+    </header>
+
+    <main>
+        <section id="current-prediction" class="container">
+            <h2>Latest Prediction for 600977</h2>
+            <div class="prediction-card">
+                <p>Date: <span id="prediction-date"></span></p>
+                <p>Predicted Close: <span id="predicted-close"></span></p>
+                <p>Actual Close: <span id="actual-close"></span></p>
+                <p>Direction: <span id="prediction-direction"></span></p>
+            </div>
+            <p class="data-source">Data Source: XSHG_5min_600977.csv</p>
+        </section>
+
+        <section id="prediction-chart-section" class="container">
+            <h2>Prediction Chart</h2>
+            <div class="chart-container">
+                <img src="../prediction_chart.png" alt="Prediction Chart" id="prediction-chart">
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 K-Online by kuhung.me</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

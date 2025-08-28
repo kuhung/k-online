@@ -36,9 +36,9 @@ graph TD;
     C --> D[数据预处理];
     D --> E[预测模型推理];
     E --> F[指标计算];
-    F --> G[图表生成 (Base64)];
+    F --> G[图表生成];
     G --> H[保存至 web/public/latest_prediction.json];
-    H --> I[Web前端 (index.html)];
+    H --> I[Web前端 index.html];
     I --> J{加载 latest_prediction.json};
     J --> K[展示预测结果];
 ```

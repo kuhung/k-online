@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchPredictionData = async () => {
         try {
             // const response = await fetch('/api/prediction_service'); 
-            const response = await fetch('/web/public/latest_prediction.json');
+            const response = await fetch('/public/latest_prediction.json');
             const data = await response.json();
 
             if (response.ok) {
