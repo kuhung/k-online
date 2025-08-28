@@ -10,8 +10,13 @@ __pycache__/
 # Virtual environment
 .venv/
 
+# Node.js
+/web/node_modules/
+/web/dist/
+
 # Generated prediction results
-webui/prediction_results/
+/web/public/predictions.json
+/web/dist/predictions.json
 
 # Kronos cache
 examples/my_kronos_cache/
