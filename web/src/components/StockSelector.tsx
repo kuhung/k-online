@@ -28,11 +28,11 @@ export const StockSelector: React.FC<StockSelectorProps> = ({
       </div>
       
       {/* 移动端下拉选择器 */}
-      <div className="block xl:hidden mb-4">
+      <div className="block xl:hidden mb-4 relative w-full">
         <select
           value={selectedSymbol || ''}
           onChange={(e) => onSymbolSelect(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-sm font-medium appearance-none pr-8"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-sm font-medium pr-8 max-w-full overflow-y-auto"
         >
           <option value="">请选择标的</option>
           {symbolList.map((symbol) => {
@@ -44,9 +44,6 @@ export const StockSelector: React.FC<StockSelectorProps> = ({
             );
           })}
         </select>
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-          <ChevronDown className="w-4 h-4" />
-        </div>
       </div>
 
       {/* 桌面端列表 */}

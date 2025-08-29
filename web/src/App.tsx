@@ -3,7 +3,7 @@ import { Layout, Dashboard } from '@/components';
 
 function App() {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />

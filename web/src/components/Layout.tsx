@@ -21,9 +21,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <p className="text-sm text-gray-600">K线预测平台</p>
               </div>
             </div>
-            <div className="text-sm text-gray-500 hidden sm:block">
-              Powered by kuhung.me
-            </div>
+            <a 
+              href="https://quantfull.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-sm text-gray-500 hover:text-primary-600 transition-colors hidden sm:block"
+            >
+              Powered by Quantfull.com
+            </a>
           </div>
         </div>
       </header>
@@ -39,7 +44,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <footer className="bg-white/60 backdrop-blur-sm border-t border-gray-200/60 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center text-sm text-gray-600">
-            <p>&copy; 2025 K-Online by kuhung.me. All rights reserved.</p>
+            <p>&copy; 2025 K-Online by Quantfull.com. All rights reserved.</p>
           </div>
         </div>
       </footer>
