@@ -25,7 +25,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               href="https://quantfull.com" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-sm text-gray-500 hover:text-primary-600 transition-colors hidden sm:block"
+              className="text-sm text-gray-500 hover:text-primary-600 transition-colors"
             >
               Powered by Quantfull.com
             </a>
