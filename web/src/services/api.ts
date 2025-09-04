@@ -1,8 +1,41 @@
 import { PredictionsData, ApiResponse, KlinePrediction } from '@/types';
+import { list } from '@vercel/blob';
 
 class ApiService {
+  private blobUrl: string | null = null;
+
   constructor() {
     // 在生产环境中，这可能是一个实际的API端点
+  }
+
+  /**
+   * 获取最新的预测数据URL
+   */
+  private async getLatestPredictionUrl(): Promise<string> {
+    if (this.blobUrl) {
+      return this.blobUrl;
+    }
+
+    try {
+      // 列出所有预测文件
+      const { blobs } = await list();
+      
+      // 按时间戳排序并获取最新的文件
+      const latestBlob = blobs
+        .filter(blob => blob.pathname.startsWith('predictions_'))
+        .sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime())[0];
+
+      if (!latestBlob) {
+        throw new Error('No prediction files found');
+      }
+
+      this.blobUrl = latestBlob.url;
+      return this.blobUrl;
+    } catch (error) {
+      console.error('Failed to get latest prediction URL:', error);
+      // 如果获取失败，回退到本地文件
+      return '/predictions.json';
+    }
   }
 
   /**
@@ -10,8 +43,8 @@ class ApiService {
    */
   async fetchPredictions(): Promise<ApiResponse<PredictionsData>> {
     try {
-      // 目前从静态文件读取，后续可以改为API调用
-      const response = await fetch('/predictions.json');
+      const url = await this.getLatestPredictionUrl();
+      const response = await fetch(url);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -37,11 +70,9 @@ class ApiService {
    */
   async fetchPredictionBySymbol(symbol: string): Promise<ApiResponse<KlinePrediction>> {
     try {
-      // 这里可以实现获取单个标的数据的逻辑
       const allPredictions = await this.fetchPredictions();
       
       if (!allPredictions.success || !allPredictions.data) {
-        // 返回一个明确的 KlinePrediction 错误类型
         return {
           success: false,
           error: allPredictions.error || 'Failed to fetch all predictions.',

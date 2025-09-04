@@ -31,4 +31,12 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# 第三步：上传预测数据到Vercel Blob
+echo "步骤 3: 上传预测数据到Vercel Blob存储"
+python upload_predictions.py
+if [ $? -ne 0 ]; then
+    echo "数据上传失败，退出执行"
+    exit 1
+fi
+
 echo "所有任务执行完成"

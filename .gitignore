@@ -17,3 +17,4 @@ __pycache__/
 
 # Kronos cache
 examples/my_kronos_cache/
+*/.env

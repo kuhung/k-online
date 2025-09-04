@@ -13,4 +13,5 @@ aiohttp
 urllib3==1.26.15
 requests==2.27.1
 tenacity==8.2.3
-vercel-blob==0.2.1
+vercel-blob==0.4.2
+python-dotenv==1.0.1

@@ -288,8 +288,18 @@ if __name__ == '__main__':
     
     # 生成并保存数据
     data = generate_and_save_prediction_data()
-    output_path = Path(__file__).resolve().parents[1] / "web/public/predictions.json"
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'w') as f:
+    # 生成带时间戳的文件名
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+    history_path = Path(__file__).resolve().parent / "history" / f"predictions_{timestamp}.json"
+    # web_path = Path(__file__).resolve().parents[1] / "web/public/predictions.json"
+    
+    # 确保目录存在
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    # web_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # 保存到历史记录
+    with open(history_path, 'w') as f:
         json.dump(data, f, indent=4)
-    print(f"预测数据已保存到 {output_path}")
+    
+    print(f"预测数据已保存到历史记录 {history_path}")
+    # print(f"预测数据已保存到web目录 {web_path}")
