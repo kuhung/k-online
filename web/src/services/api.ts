@@ -1,5 +1,4 @@
 import { PredictionsData, ApiResponse, KlinePrediction } from '@/types';
-import { list } from '@vercel/blob';
 
 class ApiService {
   private blobUrl: string | null = null;
@@ -17,20 +16,17 @@ class ApiService {
     }
 
     try {
-      // 列出所有预测文件，并根据前缀进行筛选
-      const { blobs } = await list({ prefix: 'predictions_' });
-      
-      // 按时间戳排序并获取最新的文件
-      const latestBlob = blobs
-        .filter(blob => blob.pathname.startsWith('predictions_'))
-        .sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime())[0];
-
-      if (!latestBlob) {
-        throw new Error('No prediction files found');
+      const response = await fetch('/api/get-latest-prediction-url');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-
-      this.blobUrl = latestBlob.url;
-      return this.blobUrl;
+      const data = await response.json();
+      if (!data.url) {
+        throw new Error('Invalid response from API: URL not found');
+      }
+      const latestUrl: string = data.url;
+      this.blobUrl = latestUrl;
+      return latestUrl;
     } catch (error) {
       console.error('Failed to get latest prediction URL:', error);
       // 如果获取失败，回退到本地文件

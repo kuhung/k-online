@@ -37,7 +37,7 @@ Config = {
     },
     "HIST_POINTS": 360,
     "PRED_HORIZON": 24,  # 将根据时间间隔动态调整
-    "N_PREDICTIONS": 30,
+    "N_PREDICTIONS": 50,
     "VOL_WINDOW": 24,  # 将根据时间间隔动态调整
     "DATA_DIR": Path(__file__).resolve().parent / "data",
     "price_cols": ['open', 'high', 'low', 'close']
