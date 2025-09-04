@@ -116,20 +116,10 @@ def make_prediction(df, predictor):
             pred_len=Config["PRED_HORIZON"], T=1.0, top_p=0.95,
             sample_count=Config["N_PREDICTIONS"], verbose=True
         )
-        close_preds_main = pd.DataFrame(all_preds_main['close'])
-        volume_preds_main = pd.DataFrame(all_preds_main['volume'])
+        close_preds_main, volume_preds_main = all_preds_main
         print(f"主要预测完成，用时 {time.time() - begin_time:.2f} 秒")
 
-        # 生成用于波动性分析的额外预测 (T=1.5)
-        print("生成用于波动性分析的额外预测 (T=1.5)...")
-        begin_time_vol = time.time()
-        all_preds_volatility = predictor.predict(
-            df=x_df, x_timestamp=x_timestamp, y_timestamp=y_timestamp,
-            pred_len=Config["PRED_HORIZON"], T=1.5, top_p=0.95,
-            sample_count=Config["N_PREDICTIONS"], verbose=True
-        )
-        close_preds_volatility = pd.DataFrame(all_preds_volatility['close'])
-        print(f"波动性预测完成，用时 {time.time() - begin_time_vol:.2f} 秒")
+        close_preds_volatility = close_preds_main # 暂时仍然使用主要预测的close数据
 
     return close_preds_main, volume_preds_main, close_preds_volatility
 
@@ -146,14 +136,23 @@ def calculate_metrics(hist_df, close_preds_df, v_close_preds_df):
     historical_vol = hist_log_returns.iloc[-Config["VOL_WINDOW"]:].std()
 
     amplification_count = 0
-    for col in v_close_preds_df.columns:
+    print("\n--- Volatility Calculation Debug ---")
+    print(f"Historical Volatility (window={Config['VOL_WINDOW']}): {historical_vol}")
+    
+    for i, col in enumerate(v_close_preds_df.columns):
         full_sequence = pd.concat([pd.Series([last_close]), v_close_preds_df[col]]).reset_index(drop=True)
         pred_log_returns = np.log(full_sequence / full_sequence.shift(1))
         predicted_vol = pred_log_returns.std()
+        
+        if i < 5: # 仅打印前5个样本以避免刷屏
+            print(f"  Prediction Sample {i+1} Volatility: {predicted_vol}")
+            
         if predicted_vol > historical_vol:
             amplification_count += 1
 
     vol_amp_prob = amplification_count / len(v_close_preds_df.columns)
+    print(f"Total predictions: {len(v_close_preds_df.columns)}, Amplified count: {amplification_count}")
+    print("------------------------------------\n")
 
     print(f"上涨概率 (24h): {upside_prob:.2%}, 波动性放大概率: {vol_amp_prob:.2%}")
     return upside_prob, vol_amp_prob
@@ -179,7 +178,7 @@ def create_plot(hist_df, close_preds_df, volume_preds_df):
 
     ax1.plot(hist_time, hist_df['close'], color='royalblue', label='Historical Price', linewidth=1.5)
     mean_preds = close_preds_df.mean(axis=1)
-    ax1.plot(pred_time, mean_preds, color='darkorange', linestyle='-', label='Mean Prediction')
+    ax1.plot(pred_time, mean_preds, color='darkorange', linestyle='-', label='Average Prediction')
     ax1.fill_between(pred_time, close_preds_df.min(axis=1), close_preds_df.max(axis=1), color='darkorange', alpha=0.2, label='Prediction Range (Min-Max)')
     interval_display = {
         '1m': 'minute', '3m': 'minute', '5m': 'minute', '15m': 'minute', '30m': 'minute',
@@ -197,7 +196,7 @@ def create_plot(hist_df, close_preds_df, volume_preds_df):
     ax1.grid(True, which='both', linestyle='--', linewidth=0.5)
 
     ax2.bar(hist_time, hist_df['volume'], color='skyblue', label='Historical Volume', width=0.03)
-    ax2.bar(pred_time, volume_preds_df.mean(axis=1), color='sandybrown', label='Predicted Mean Volume', width=0.03)
+    ax2.bar(pred_time, volume_preds_df.mean(axis=1), color='sandybrown', label='Predicted Average Volume', width=0.03)
     ax2.set_ylabel('Volume')
     ax2.set_xlabel('Time (UTC)')
     ax2.legend()

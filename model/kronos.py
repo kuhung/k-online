@@ -436,7 +436,7 @@ def auto_regressive_inference(tokenizer, model, x, x_stamp, y_stamp, max_context
         z = tokenizer.decode(input_tokens, half=True)
         z = z.reshape(batch_size, sample_count, z.size(1), z.size(2))
         preds = z.cpu().numpy()
-        preds = np.mean(preds, axis=1)
+        # preds = np.mean(preds, axis=1)
 
         return preds
 
@@ -475,7 +475,7 @@ class KronosPredictor:
 
         preds = auto_regressive_inference(self.tokenizer, self.model, x_tensor, x_stamp_tensor, y_stamp_tensor, self.max_context, pred_len,
                                           self.clip, T, top_k, top_p, sample_count, verbose)
-        preds = preds[:, -pred_len:, :]
+        preds = preds[:, :, -pred_len:, :]
         return preds
 
     def predict(self, df, x_timestamp, y_timestamp, pred_len, T=1.0, top_k=0, top_p=0.9, sample_count=1, verbose=True):
@@ -515,7 +515,12 @@ class KronosPredictor:
         preds = self.generate(x, x_stamp, y_stamp, pred_len, T, top_k, top_p, sample_count, verbose)
 
         preds = preds.squeeze(0)
-        preds = preds * (x_std + 1e-5) + x_mean
+        preds = preds * (x_std[np.newaxis, :] + 1e-5) + x_mean[np.newaxis, :]
 
-        pred_df = pd.DataFrame(preds, columns=self.price_cols + [self.vol_col, self.amt_vol], index=y_timestamp)
-        return pred_df
+        close_preds = preds[:, :, 3].swapaxes(0, 1)
+        volume_preds = preds[:, :, 4].swapaxes(0, 1)
+
+        close_df = pd.DataFrame(close_preds, columns=[f"pred-{i+1}" for i in range(sample_count)], index=y_timestamp)
+        volume_df = pd.DataFrame(volume_preds, columns=[f"pred-{i + 1}" for i in range(sample_count)], index=y_timestamp)
+
+        return close_df, volume_df
