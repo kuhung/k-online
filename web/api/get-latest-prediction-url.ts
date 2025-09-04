@@ -12,13 +12,11 @@ export default async function handler(
       return response.status(404).json({ error: 'No prediction files found.' });
     }
 
-    // Sort blobs by uploaded date in descending order to find the latest one
-    const sortedBlobs = blobs.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
-    
-    const latestPrediction = sortedBlobs.find(blob => blob.pathname.startsWith('predictions_'));
+    // Find the latest prediction file by its fixed name
+    const latestPrediction = blobs.find(blob => blob.pathname === 'prediction_latest.json');
 
     if (!latestPrediction) {
-        return response.status(404).json({ error: 'No prediction files with the correct prefix found.' });
+        return response.status(404).json({ error: 'prediction_latest.json not found.' });
     }
 
     return response.status(200).json({ url: latestPrediction.url });

@@ -65,8 +65,8 @@ class PredictionUploader:
                 return ""
 
             # 生成带时间戳的文件名
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"predictions_{timestamp}.json"
+            # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = "prediction_latest.json"
             
             # 将数据转换为bytes
             data = json.dumps(predictions, indent=2).encode('utf-8')
