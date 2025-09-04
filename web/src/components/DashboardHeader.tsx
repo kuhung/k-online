@@ -14,7 +14,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div className="space-y-1">
         <h1 className="text-3xl font-bold text-gray-900">K线预测仪表板</h1>
-        <p className="text-gray-600">基于机器学习的K线预测分析</p>
+        <p className="text-gray-600">基于机器学习的K线预测分析（仅供学习交流，不构成投资建议）</p>
       </div>
       <button
         onClick={onRefresh}

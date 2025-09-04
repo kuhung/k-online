@@ -247,7 +247,7 @@ def main_task(model, symbol: str):
             "upside_probability": f"{upside_prob:.1%}",
             "volatility_amplification_probability": f"{vol_amp_prob:.1%}",
             "chart_image_base64": chart_base64,
-            "data_source": "Local Data"
+            "data_source": "Binance API + Kronos"
         }
     except Exception as e:
         print(f"处理 {symbol} 时出错: {e}")
