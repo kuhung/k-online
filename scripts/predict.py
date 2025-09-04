@@ -10,6 +10,7 @@ import pandas as pd
 import torch
 import sys
 import json
+import argparse
 
 # Add the project root to the Python path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
@@ -18,7 +19,7 @@ from model import KronosTokenizer, Kronos, KronosPredictor
 
 # --- Configuration ---
 Config = {
-    "MODEL_PATH": "../examples/my_kronos_cache",
+    "MODEL_PATH": str(Path(__file__).resolve().parents[1] / "examples/my_kronos_cache"),
     "SYMBOL": 'BTCUSDT',  # 保持原有的单一标的配置
     "TARGET_SYMBOLS": ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT'],
     "SYMBOL_NAMES": {  # 标的名称映射
@@ -28,12 +29,17 @@ Config = {
         'XRPUSDT': '瑞波币 / USDT',
         'DOGEUSDT': '狗狗币 / USDT',
     },
-    "INTERVAL": '1h',
+    "INTERVAL": '1d',  # 默认使用天级别数据
+    "INTERVAL_MAPPING": {  # 时间间隔到小时的映射
+        '1m': 1/60, '3m': 3/60, '5m': 5/60, '15m': 15/60, '30m': 30/60,
+        '1h': 1, '2h': 2, '4h': 4, '6h': 6, '8h': 8, '12h': 12,
+        '1d': 24, '3d': 72, '1w': 168, '1M': 720  # 假设一个月平均30天
+    },
     "HIST_POINTS": 360,
-    "PRED_HORIZON": 24,
+    "PRED_HORIZON": 24,  # 将根据时间间隔动态调整
     "N_PREDICTIONS": 30,
-    "VOL_WINDOW": 24,
-    "DATA_DIR": Path(__file__).parent / "data",
+    "VOL_WINDOW": 24,  # 将根据时间间隔动态调整
+    "DATA_DIR": Path(__file__).resolve().parent / "data",
     "price_cols": ['open', 'high', 'low', 'close']
 }
 
@@ -75,11 +81,28 @@ def load_local_data(symbol: str):
 def make_prediction(df, predictor):
     """使用 Kronos 模型生成概率预测"""
     last_timestamp = df['timestamps'].max()
-    start_new_range = last_timestamp + pd.Timedelta(hours=1)
+    interval_hours = Config["INTERVAL_MAPPING"][Config["INTERVAL"]]
+    
+    # 根据时间间隔调整预测周期
+    pred_horizon = max(1, int(Config["PRED_HORIZON"] / interval_hours))
+    
+    start_new_range = last_timestamp + pd.Timedelta(hours=interval_hours)
+    freq_str = {
+        1/60: 'min', 1: 'H', 24: 'D', 168: 'W', 720: 'M'
+    }.get(interval_hours, 'H')
+    
+    if interval_hours < 1:  # 分钟级别
+        freq_value = int(interval_hours * 60)
+        freq = f'{freq_value}min'
+    elif interval_hours >= 24:  # 天及以上级别
+        freq = freq_str
+    else:  # 小时级别
+        freq = f'{int(interval_hours)}H'
+    
     new_timestamps_index = pd.date_range(
         start=start_new_range,
-        periods=Config["PRED_HORIZON"],
-        freq='h'
+        periods=pred_horizon,
+        freq=freq
     )
     y_timestamp = pd.Series(new_timestamps_index, name='y_timestamp')
     x_timestamp = df['timestamps']
@@ -136,13 +159,30 @@ def create_plot(hist_df, close_preds_df, volume_preds_df):
 
     hist_time = hist_df['timestamps']
     last_hist_time = hist_time.iloc[-1]
-    pred_time = pd.to_datetime([last_hist_time + timedelta(hours=i + 1) for i in range(len(close_preds_df))])
+    interval_hours = Config["INTERVAL_MAPPING"][Config["INTERVAL"]]
+    
+    # 根据时间间隔生成预测时间序列
+    pred_time = pd.date_range(
+        start=last_hist_time + pd.Timedelta(hours=interval_hours),
+        periods=len(close_preds_df),
+        freq=pd.Timedelta(hours=interval_hours)
+    )
 
     ax1.plot(hist_time, hist_df['close'], color='royalblue', label='历史价格', linewidth=1.5)
     mean_preds = close_preds_df.mean(axis=1)
     ax1.plot(pred_time, mean_preds, color='darkorange', linestyle='-', label='平均预测')
     ax1.fill_between(pred_time, close_preds_df.min(axis=1), close_preds_df.max(axis=1), color='darkorange', alpha=0.2, label='预测范围 (最小-最大)')
-    ax1.set_title(f'{Config["SYMBOL"]} 概率价格和成交量预测 (未来 {Config["PRED_HORIZON"]} 小时)', fontsize=16, weight='bold')
+    interval_display = {
+        '1m': '分钟', '3m': '分钟', '5m': '分钟', '15m': '分钟', '30m': '分钟',
+        '1h': '小时', '2h': '小时', '4h': '小时', '6h': '小时', '8h': '小时', '12h': '小时',
+        '1d': '天', '3d': '天', '1w': '周', '1M': '月'
+    }.get(Config["INTERVAL"], '时间单位')
+    
+    pred_count = len(close_preds_df)
+    ax1.set_title(
+        f'{Config["SYMBOL"]} 概率价格和成交量预测 (未来 {pred_count} {interval_display})',
+        fontsize=16, weight='bold'
+    )
     ax1.set_ylabel('价格 (USDT)')
     ax1.legend()
     ax1.grid(True, which='both', linestyle='--', linewidth=0.5)
@@ -228,9 +268,19 @@ def generate_and_save_prediction_data():
     return all_predictions
 
 if __name__ == '__main__':
+    # 解析命令行参数
+    parser = argparse.ArgumentParser(description='生成加密货币价格预测')
+    parser.add_argument('--interval', type=str, default='1d',
+                      choices=['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w', '1M'],
+                      help='数据时间间隔 (默认: 1d)')
+    args = parser.parse_args()
+
+    # 更新配置
+    Config["INTERVAL"] = args.interval
+    
     # 生成并保存数据
     data = generate_and_save_prediction_data()
-    output_path = Path("../web/public/predictions.json")
+    output_path = Path(__file__).resolve().parents[1] / "web/public/predictions.json"
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, 'w') as f:
         json.dump(data, f, indent=4)

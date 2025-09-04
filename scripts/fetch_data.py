@@ -6,6 +6,7 @@ import pandas as pd
 from binance.client import Client
 import sys
 import json
+import argparse
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 # Add the project root to the Python path
@@ -22,10 +23,10 @@ Config = {
         'XRPUSDT': '瑞波币 / USDT',
         'DOGEUSDT': '狗狗币 / USDT',
     },
-    "INTERVAL": '1h',
+    "INTERVAL": '1d',  # 默认使用天级别数据
     "HIST_POINTS": 360,
     "VOL_WINDOW": 24,
-    "DATA_DIR": Path(__file__).parent / "data"
+    "DATA_DIR": Path(__file__).resolve().parent / "data"
 }
 
 def get_data_file_path(symbol: str) -> Path:
@@ -130,7 +131,17 @@ def update_local_data(symbol: str):
 
 def main():
     """主函数"""
+    parser = argparse.ArgumentParser(description='获取加密货币历史数据')
+    parser.add_argument('--interval', type=str, default='1d',
+                      choices=['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w', '1M'],
+                      help='数据时间间隔 (默认: 1d)')
+    args = parser.parse_args()
+
+    # 更新配置
+    Config["INTERVAL"] = args.interval
+
     print(f"开始更新数据 - {datetime.now(timezone.utc)}")
+    print(f"数据时间间隔: {Config['INTERVAL']}")
     
     for symbol in Config["TARGET_SYMBOLS"]:
         print(f"\n处理 {symbol} 数据...")
