@@ -17,8 +17,8 @@ class ApiService {
     }
 
     try {
-      // 列出所有预测文件
-      const { blobs } = await list();
+      // 列出所有预测文件，并根据前缀进行筛选
+      const { blobs } = await list({ prefix: 'predictions_' });
       
       // 按时间戳排序并获取最新的文件
       const latestBlob = blobs
