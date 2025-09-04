@@ -120,7 +120,16 @@ def make_prediction(df, predictor):
         volume_preds_main = pd.DataFrame(all_preds_main['volume'])
         print(f"主要预测完成，用时 {time.time() - begin_time:.2f} 秒")
 
-        close_preds_volatility = pd.DataFrame(close_preds_main)
+        # 生成用于波动性分析的额外预测 (T=1.5)
+        print("生成用于波动性分析的额外预测 (T=1.5)...")
+        begin_time_vol = time.time()
+        all_preds_volatility = predictor.predict(
+            df=x_df, x_timestamp=x_timestamp, y_timestamp=y_timestamp,
+            pred_len=Config["PRED_HORIZON"], T=1.5, top_p=0.95,
+            sample_count=Config["N_PREDICTIONS"], verbose=True
+        )
+        close_preds_volatility = pd.DataFrame(all_preds_volatility['close'])
+        print(f"波动性预测完成，用时 {time.time() - begin_time_vol:.2f} 秒")
 
     return close_preds_main, volume_preds_main, close_preds_volatility
 
@@ -168,29 +177,29 @@ def create_plot(hist_df, close_preds_df, volume_preds_df):
         freq=pd.Timedelta(hours=interval_hours)
     )
 
-    ax1.plot(hist_time, hist_df['close'], color='royalblue', label='历史价格', linewidth=1.5)
+    ax1.plot(hist_time, hist_df['close'], color='royalblue', label='Historical Price', linewidth=1.5)
     mean_preds = close_preds_df.mean(axis=1)
-    ax1.plot(pred_time, mean_preds, color='darkorange', linestyle='-', label='平均预测')
-    ax1.fill_between(pred_time, close_preds_df.min(axis=1), close_preds_df.max(axis=1), color='darkorange', alpha=0.2, label='预测范围 (最小-最大)')
+    ax1.plot(pred_time, mean_preds, color='darkorange', linestyle='-', label='Mean Prediction')
+    ax1.fill_between(pred_time, close_preds_df.min(axis=1), close_preds_df.max(axis=1), color='darkorange', alpha=0.2, label='Prediction Range (Min-Max)')
     interval_display = {
-        '1m': '分钟', '3m': '分钟', '5m': '分钟', '15m': '分钟', '30m': '分钟',
-        '1h': '小时', '2h': '小时', '4h': '小时', '6h': '小时', '8h': '小时', '12h': '小时',
-        '1d': '天', '3d': '天', '1w': '周', '1M': '月'
-    }.get(Config["INTERVAL"], '时间单位')
+        '1m': 'minute', '3m': 'minute', '5m': 'minute', '15m': 'minute', '30m': 'minute',
+        '1h': 'hour', '2h': 'hour', '4h': 'hour', '6h': 'hour', '8h': 'hour', '12h': 'hour',
+        '1d': 'day', '3d': 'day', '1w': 'week', '1M': 'month'
+    }.get(Config["INTERVAL"], 'time unit')
     
     pred_count = len(close_preds_df)
     ax1.set_title(
-        f'{Config["SYMBOL"]} 概率价格和成交量预测 (未来 {pred_count} {interval_display})',
+        f'{Config["SYMBOL"]} Probabilistic Price and Volume Prediction (Next {pred_count} {interval_display})',
         fontsize=16, weight='bold'
     )
-    ax1.set_ylabel('价格 (USDT)')
+    ax1.set_ylabel('Price (USDT)')
     ax1.legend()
     ax1.grid(True, which='both', linestyle='--', linewidth=0.5)
 
-    ax2.bar(hist_time, hist_df['volume'], color='skyblue', label='历史成交量', width=0.03)
-    ax2.bar(pred_time, volume_preds_df.mean(axis=1), color='sandybrown', label='预测平均成交量', width=0.03)
-    ax2.set_ylabel('成交量')
-    ax2.set_xlabel('时间 (UTC)')
+    ax2.bar(hist_time, hist_df['volume'], color='skyblue', label='Historical Volume', width=0.03)
+    ax2.bar(pred_time, volume_preds_df.mean(axis=1), color='sandybrown', label='Predicted Mean Volume', width=0.03)
+    ax2.set_ylabel('Volume')
+    ax2.set_xlabel('Time (UTC)')
     ax2.legend()
     ax2.grid(True, which='both', linestyle='--', linewidth=0.5)
 
