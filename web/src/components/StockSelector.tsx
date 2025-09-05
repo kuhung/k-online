@@ -97,7 +97,7 @@ export const StockSelector: React.FC<StockSelectorProps> = ({
       {selectedSymbol && predictions[selectedSymbol] && (
         <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100 flex items-center space-x-2 text-sm text-gray-600">
           <Database className="w-4 h-4 text-gray-500" />
-          <span>数据&模型: {predictions[selectedSymbol].data_source}</span>
+          <span>模型: {predictions[selectedSymbol].data_source}</span>
         </div>
       )}
     </div>
