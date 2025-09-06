@@ -6,6 +6,7 @@ export { StatsPanel } from './StatsPanel';
 export { StockSelector } from './StockSelector';
 export { PredictionDetail } from './PredictionDetail';
 export { ChartDisplay } from './ChartDisplay';
+export { CandlestickChart } from './CandlestickChart';
 export { LoadingSpinner } from './LoadingSpinner';
 export { ErrorMessage } from './ErrorMessage';
 export { Skeleton, PredictionDetailSkeleton, StockSelectorSkeleton, StatsPanelSkeleton } from './SkeletonLoader';

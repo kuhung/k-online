@@ -88,8 +88,8 @@ def main_task(symbol: str, market_type: str, interval: str) -> Dict[str, Any]:
         # 获取预测器
         predictor = get_market_predictor(market_type, interval)
         
-        # 生成预测
-        prediction_data = predictor.make_prediction(df, symbol)
+        # 生成预测（默认只输出结构化数据，不生成图片以减少传输成本）
+        prediction_data = predictor.make_prediction(df, symbol, include_chart_image=False)
         
         # 清理内存
         del df

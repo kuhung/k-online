@@ -12,7 +12,10 @@ export interface MarketInfo {
   description: string;
 }
 
-// K线预测数据类型定义
+// 导入图表数据类型
+export * from './chart-data';
+
+// K线预测数据类型定义（更新版本）
 export interface KlinePrediction {
   symbol: string;
   name: string;
@@ -20,10 +23,15 @@ export interface KlinePrediction {
   direction: 'Up' | 'Down';
   upside_probability: string;
   volatility_amplification_probability: string;
-  chart_image_base64: string;
   data_source: string;
   market_type?: MarketType; // 可选字段，用于兼容现有数据
   display_name?: string; // 中文显示名称
+  
+  // 新的数据结构（优先）
+  chart_data?: import('./chart-data').ChartData;
+  
+  // 向后兼容（可选）
+  chart_image_base64?: string;
 }
 
 // 多标的预测数据类型
@@ -60,6 +68,9 @@ export interface PredictionDetailProps {
 }
 
 export interface ChartDisplayProps {
-  chartImageBase64: string;
   symbol: string;
+  chartData?: import('./chart-data').ChartData;
+  chartImageBase64?: string;
+  showVolume?: boolean;
+  onChartReady?: (chart: any) => void;
 }

@@ -14,6 +14,7 @@ import io
 import base64
 import matplotlib.pyplot as plt
 from model import KronosTokenizer, Kronos, KronosPredictor
+from model.chart_data_generator import ChartDataGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ class MarketPredictor(ABC):
         self.model_path = Path(model_path)
         self.interval = interval
         self._predictor = None
+        self.chart_data_generator = ChartDataGenerator(interval)
     
     @property
     def predictor(self) -> KronosPredictor:
@@ -87,7 +89,7 @@ class MarketPredictor(ABC):
         """获取市场交易时间"""
         pass
     
-    def make_prediction(self, df: pd.DataFrame, symbol: str) -> Dict[str, Any]:
+    def make_prediction(self, df: pd.DataFrame, symbol: str, include_chart_image: bool = False) -> Dict[str, Any]:
         """生成预测结果"""
         try:
             # 过滤数据，确保只包含交易时间的数据
@@ -108,20 +110,38 @@ class MarketPredictor(ABC):
                 close_preds_volatility
             )
             
-            # 生成图表
-            chart_base64 = self._create_plot(hist_df_for_plot, close_preds, volume_preds, symbol)
+            # 生成结构化图表数据
+            last_timestamp = df_for_model['timestamps'].max()
+            prediction_timestamps = self._generate_prediction_timestamps(last_timestamp)
+            chart_data = self.chart_data_generator.generate_chart_data(
+                hist_df_for_plot,
+                close_preds,
+                volume_preds,
+                symbol,
+                last_timestamp,
+                self.get_prediction_horizon(),
+                self.get_data_source(),
+                prediction_timestamps
+            )
             
-            # 返回结果
-            return {
+            # 构建基本返回结果
+            result = {
                 "symbol": symbol,
                 "market_type": self.get_market_type(),
                 "updated_at_utc": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC'),
                 "direction": "Up" if upside_prob >= 0.5 else "Down",
                 "upside_probability": f"{upside_prob:.1%}",
                 "volatility_amplification_probability": f"{vol_amp_prob:.1%}",
-                "chart_image_base64": chart_base64,
-                "data_source": self.get_data_source()
+                "data_source": self.get_data_source(),
+                "chart_data": chart_data
             }
+            
+            # 可选生成图表图片（向后兼容）
+            if include_chart_image:
+                chart_base64 = self._create_plot(hist_df_for_plot, close_preds, volume_preds, symbol)
+                result["chart_image_base64"] = chart_base64
+            
+            return result
         
         except Exception as e:
             logger.error(f"生成预测时出错: {e}")

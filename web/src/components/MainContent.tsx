@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StockSelector } from './StockSelector';
 import { PredictionDetail } from './PredictionDetail';
 import { ChartDisplay } from './ChartDisplay';
 import { StatsPanel } from './StatsPanel';
 import { PredictionsData, KlinePrediction } from '@/types';
 import { getSymbolDisplayName, getFormattedSymbol } from '@/utils';
+import { Eye, EyeOff, RotateCcw } from 'lucide-react';
 
 interface MainContentProps {
   predictions: PredictionsData;
@@ -23,6 +24,54 @@ export const MainContent: React.FC<MainContentProps> = ({
   onSymbolSelect,
   symbolList,
 }) => {
+  const [showVolume, setShowVolume] = useState(true);
+  const [chartRef, setChartRef] = useState<any>(null);
+
+  // 增强的重置功能，包含按钮状态重置
+  const handleResetAll = () => {
+    // 重置缩放
+    if (chartRef) {
+      chartRef.dispatchAction({
+        type: 'dataZoom',
+        start: 70,
+        end: 100
+      });
+      
+      // 重置图例选择状态
+      chartRef.dispatchAction({
+        type: 'legendSelect',
+        name: '历史K线'
+      });
+      chartRef.dispatchAction({
+        type: 'legendSelect',
+        name: '预测均价'
+      });
+      chartRef.dispatchAction({
+        type: 'legendSelect',
+        name: '预测范围'
+      });
+      chartRef.dispatchAction({
+        type: 'legendSelect',
+        name: '历史成交量'
+      });
+      chartRef.dispatchAction({
+        type: 'legendSelect',
+        name: '预测成交量'
+      });
+      
+      // 确保预测上限和下限保持隐藏状态
+      chartRef.dispatchAction({
+        type: 'legendUnSelect',
+        name: '预测上限'
+      });
+      chartRef.dispatchAction({
+        type: 'legendUnSelect',
+        name: '预测下限'
+      });
+    }
+    // 重置按钮状态
+    setShowVolume(true);
+  };
   return (
     <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 lg:gap-8">
       {/* 左侧：标的选择器 */}
@@ -51,16 +100,45 @@ export const MainContent: React.FC<MainContentProps> = ({
           {selectedPrediction && (
             <div className="card p-4 sm:p-6 lg:p-8">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 lg:mb-6">
-                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-0">
-                  预测图表 ({getFormattedSymbol(selectedPrediction.symbol)} - {selectedPrediction.display_name || getSymbolDisplayName(selectedPrediction.symbol)})
-                </h3>
-                <div className="text-sm text-gray-500">
-                  下个24小时预测
+                <div className="mb-2 sm:mb-0">
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
+                    预测图表 ({getFormattedSymbol(selectedPrediction.symbol)} - {selectedPrediction.display_name || getSymbolDisplayName(selectedPrediction.symbol)})
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    预测24小时内的有效交易窗口
+                  </p>
+                </div>
+                
+                {/* 控制按钮组 - 移动到上一层级 */}
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setShowVolume(!showVolume)}
+                    className={`flex items-center space-x-2 px-3 py-1 text-sm rounded-md transition-colors ${
+                      showVolume 
+                        ? 'bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-300' 
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300'
+                    }`}
+                  >
+                    {showVolume ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    <span>成交量</span>
+                  </button>
+                  
+                  <button
+                    onClick={handleResetAll}
+                    className="flex items-center space-x-2 px-3 py-1 text-sm rounded-md transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300"
+                    title="重置缩放和按钮状态"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>重置</span>
+                  </button>
                 </div>
               </div>
+              
               <ChartDisplay
-                chartImageBase64={selectedPrediction.chart_image_base64}
                 symbol={selectedPrediction.symbol}
+                chartData={selectedPrediction.chart_data}
+                showVolume={showVolume}
+                onChartReady={(chart) => setChartRef(chart)}
               />
             </div>
           )}
