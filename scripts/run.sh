@@ -110,10 +110,10 @@ process_crypto() {
     
     if [[ "$SKIP_FETCH" == "false" ]]; then
         echo "获取加密货币数据..."
-        python fetch_data.py --interval "$interval"
+        python fetch_crypto_data.py --interval "$interval"
+        # 不再根据 fetch_crypto_data.py 的退出码终止，而是记录错误并继续
         if [ $? -ne 0 ]; then
-            echo "加密货币数据获取失败"
-            return 1
+            echo "警告: 加密货币数据获取过程中出现错误，但将继续尝试预测。"
         fi
     else
         echo "跳过数据获取步骤..."

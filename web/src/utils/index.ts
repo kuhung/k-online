@@ -804,9 +804,10 @@ export function formatPercentage(value: string): string {
 
 /**
  * 获取预测方向的颜色类名
+ * 符合中国习惯：上涨红色，下跌绿色
  */
 export function getDirectionColor(direction: 'Up' | 'Down'): string {
-  return direction === 'Up' ? 'text-green-600' : 'text-red-600';
+  return direction === 'Up' ? 'text-red-600' : 'text-green-600';
 }
 
 /**

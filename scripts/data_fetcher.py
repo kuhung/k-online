@@ -38,10 +38,23 @@ class DataFetcher(ABC):
         if not file_path.exists():
             return None
         try:
+            import pytz
             df = pd.read_csv(file_path)
             if len(df) == 0:
                 return None
-            return pd.to_datetime(df['timestamps'].iloc[-1])
+            
+            # 解析时间戳
+            timestamp = pd.to_datetime(df['timestamps'].iloc[-1])
+            
+            # 如果是加密货币数据，需要将本地存储的北京时间转换为带时区信息的时间
+            # 这样在调用 timestamp() 时才能得到正确的UTC时间戳
+            if hasattr(self, 'get_market_type') and self.get_market_type() == 'crypto':
+                china_tz = pytz.timezone('Asia/Shanghai')
+                # 本地数据存储的是北京时间，添加时区信息
+                if timestamp.tz is None:
+                    timestamp = china_tz.localize(timestamp)
+            
+            return timestamp
         except Exception as e:
             logger.error(f"读取本地数据失败: {e}")
             return None
