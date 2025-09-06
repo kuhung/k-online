@@ -4,6 +4,7 @@
 """
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
+import pytz
 from pathlib import Path
 import pandas as pd
 from typing import Dict, Any, Tuple, Optional
@@ -128,7 +129,7 @@ class MarketPredictor(ABC):
             result = {
                 "symbol": symbol,
                 "market_type": self.get_market_type(),
-                "updated_at_utc": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC'),
+                "updated_at_utc": datetime.now(pytz.timezone('Asia/Shanghai')).strftime('%Y-%m-%d %H:%M:%S CST'),
                 "direction": "Up" if upside_prob >= 0.5 else "Down",
                 "upside_probability": f"{upside_prob:.1%}",
                 "volatility_amplification_probability": f"{vol_amp_prob:.1%}",

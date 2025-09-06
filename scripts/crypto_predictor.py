@@ -3,6 +3,7 @@
 加密货币市场预测器
 """
 from datetime import datetime, timedelta
+import pytz
 import pandas as pd
 from typing import Tuple
 from market_predictor import MarketPredictor
@@ -54,11 +55,15 @@ class CryptoPredictor(MarketPredictor):
         else:  # 小时级别
             freq = f'{int(self.interval_hours)}H'
         
-        return pd.date_range(
+        # 生成时间序列，确保使用 UTC+8 时区
+        timestamps = pd.date_range(
             start=start_new_range,
             periods=self.get_prediction_horizon(),
             freq=freq
         )
+        
+        # 确保时间戳没有时区信息（已经是 UTC+8 本地时间）
+        return timestamps.tz_localize(None) if timestamps.tz is not None else timestamps
     
     def _filter_trading_hours(self, df: pd.DataFrame) -> pd.DataFrame:
         """过滤数据，加密货币市场24小时交易，不需要过滤"""

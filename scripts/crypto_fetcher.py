@@ -3,6 +3,7 @@
 加密货币数据获取实现
 """
 from datetime import datetime, timezone, timedelta
+import pytz
 from pathlib import Path
 import pandas as pd
 from typing import Optional, List
@@ -98,8 +99,11 @@ class CryptoDataFetcher(DataFetcher):
             df = df[['open_time', 'open', 'high', 'low', 'close', 'volume', 'quote_asset_volume']]
             df.rename(columns={'quote_asset_volume': 'amount', 'open_time': 'timestamps'}, inplace=True)
             
-            # 转换数据类型
-            df['timestamps'] = pd.to_datetime(df['timestamps'], unit='ms')
+            # 转换数据类型和时区
+            df['timestamps'] = pd.to_datetime(df['timestamps'], unit='ms', utc=True)
+            # 转换为 UTC+8 时区
+            china_tz = pytz.timezone('Asia/Shanghai')
+            df['timestamps'] = df['timestamps'].dt.tz_convert(china_tz).dt.tz_localize(None)
             for col in ['open', 'high', 'low', 'close', 'volume', 'amount']:
                 df[col] = pd.to_numeric(df[col])
             

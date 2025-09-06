@@ -1,5 +1,4 @@
 import { PredictionsData, ApiResponse, KlinePrediction } from '@/types';
-import { normalizeUtcDate } from '@/utils';
 
 class ApiService {
   private blobUrl: string | null = null;
@@ -49,15 +48,8 @@ class ApiService {
       
       const rawData = await response.json();
       
-      // 处理并标准化日期
-      const normalizedData = Object.entries(rawData).reduce((acc, [symbol, prediction]) => {
-        const pred = prediction as KlinePrediction;
-        acc[symbol] = {
-          ...pred,
-          updated_at_utc: normalizeUtcDate(pred.updated_at_utc)
-        };
-        return acc;
-      }, {} as PredictionsData);
+      // 后端已经提供正确时区的数据，直接使用
+      const normalizedData = rawData as PredictionsData;
       
       return {
         success: true,

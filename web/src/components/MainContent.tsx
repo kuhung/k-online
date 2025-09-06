@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StockSelector } from './StockSelector';
 import { PredictionDetail } from './PredictionDetail';
 import { ChartDisplay } from './ChartDisplay';
 import { StatsPanel } from './StatsPanel';
 import { PredictionsData, KlinePrediction } from '@/types';
-import { getSymbolDisplayName, getFormattedSymbol } from '@/utils';
+import { getSymbolDisplayName, getFormattedSymbol, isSmallScreen } from '@/utils';
 import { Eye, EyeOff, RotateCcw } from 'lucide-react';
 
 interface MainContentProps {
@@ -26,6 +26,19 @@ export const MainContent: React.FC<MainContentProps> = ({
 }) => {
   const [showVolume, setShowVolume] = useState(true);
   const [chartRef, setChartRef] = useState<any>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // 检测是否为移动端设备
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(isSmallScreen());
+    };
+    
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
   // 增强的重置功能，包含按钮状态重置
   const handleResetAll = () => {
@@ -105,33 +118,52 @@ export const MainContent: React.FC<MainContentProps> = ({
                     预测图表 ({getFormattedSymbol(selectedPrediction.symbol)} - {selectedPrediction.display_name || getSymbolDisplayName(selectedPrediction.symbol)})
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    预测24小时内的有效交易窗口
+                    未来24小时窗口
                   </p>
                 </div>
                 
-                {/* 控制按钮组 - 移动到上一层级 */}
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setShowVolume(!showVolume)}
-                    className={`flex items-center space-x-2 px-3 py-1 text-sm rounded-md transition-colors ${
-                      showVolume 
-                        ? 'bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-300' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300'
-                    }`}
-                  >
-                    {showVolume ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                    <span>成交量</span>
-                  </button>
-                  
-                  <button
-                    onClick={handleResetAll}
-                    className="flex items-center space-x-2 px-3 py-1 text-sm rounded-md transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300"
-                    title="重置缩放和按钮状态"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    <span>重置</span>
-                  </button>
-                </div>
+                {/* 控制按钮组 - 移动端简化 */}
+                {!isMobile && (
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setShowVolume(!showVolume)}
+                      className={`flex items-center space-x-2 px-3 py-1 text-sm rounded-md transition-colors ${
+                        showVolume 
+                          ? 'bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-300' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300'
+                      }`}
+                    >
+                      {showVolume ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      <span>成交量</span>
+                    </button>
+                    
+                    <button
+                      onClick={handleResetAll}
+                      className="flex items-center space-x-2 px-3 py-1 text-sm rounded-md transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300"
+                      title="重置缩放和按钮状态"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      <span>重置</span>
+                    </button>
+                  </div>
+                )}
+                
+                {/* 移动端简化的控制按钮 */}
+                {isMobile && (
+                  <div className="flex items-center space-x-1">
+                    <button
+                      onClick={() => setShowVolume(!showVolume)}
+                      className={`flex items-center px-2 py-1 text-xs rounded transition-colors ${
+                        showVolume 
+                          ? 'bg-orange-100 text-orange-700 border border-orange-300' 
+                          : 'bg-gray-100 text-gray-600 border border-gray-300'
+                      }`}
+                      title={showVolume ? '隐藏成交量' : '显示成交量'}
+                    >
+                      {showVolume ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                    </button>
+                  </div>
+                )}
               </div>
               
               <ChartDisplay

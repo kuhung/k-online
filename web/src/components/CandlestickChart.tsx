@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { AlertCircle } from 'lucide-react';
 import { ChartData, CandlestickPoint, DataPoint } from '@/types/chart-data';
+import { isSmallScreen } from '@/utils';
 import * as echarts from 'echarts';
 
 interface CandlestickChartProps {
@@ -17,6 +18,19 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
   showVolume = true,
   onChartReady
 }) => {
+  // 检测是否为移动端/小屏幕设备
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(isSmallScreen());
+    };
+    
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
   // 处理数据格式，转换为ECharts K线图格式
   const processedData = useMemo(() => {
@@ -154,17 +168,27 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
         selected: {
           '预测上限': false,
           '预测下限': false
-        }
+        },
+        // 移动端简化图例显示
+        show: !isMobile,
+        ...(isMobile && {
+          show: true,
+          itemWidth: 20,
+          itemHeight: 12,
+          textStyle: {
+            fontSize: 12
+          }
+        })
       },
       grid: [
         {
-          left: '80px',
+          left: isMobile ? '10px' : '80px',
           right: '4%',
-          top: showVolume ? '12%' : '15%',
+          top: showVolume ? (isMobile ? '8%' : '12%') : (isMobile ? '10%' : '15%'),
           height: showVolume ? '55%' : '70%'
         },
         ...(showVolume ? [{
-          left: '80px',
+          left: isMobile ? '10px' : '80px',
           right: '4%',
           top: '75%',
           height: '20%'
@@ -199,7 +223,14 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
           scale: true,
           splitArea: {
             show: true
-          }
+          },
+          // 移动端隐藏Y轴标签
+          axisLabel: { 
+            show: !isMobile,
+            ...(isMobile && { show: false })
+          },
+          axisTick: { show: !isMobile },
+          axisLine: { show: !isMobile }
         },
         ...(showVolume ? [{
           scale: true,
@@ -219,12 +250,13 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
           end: 100
         },
         {
-          show: true,
+          show: !isMobile, // 移动端隐藏滑块
           xAxisIndex: showVolume ? [0, 1] : [0],
           type: 'slider',
           top: showVolume ? '95%' : '85%',
           start: 70,
-          end: 100
+          end: 100,
+          height: isMobile ? 20 : 30 // 移动端减小高度
         }
       ],
       series: [
@@ -365,17 +397,22 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <ReactECharts
           option={option}
-          style={{ height: showVolume ? '650px' : '500px', width: '100%' }}
+          style={{ 
+            height: isMobile ? 
+              (showVolume ? '400px' : '300px') : 
+              (showVolume ? '650px' : '500px'), 
+            width: '100%' 
+          }}
           opts={{ renderer: 'canvas' }}
           onChartReady={onChartReady}
         />
       </div>
       
-      <div className="text-sm text-gray-500 text-center space-y-1">
-        <p>* 红色K线表示上涨，绿色K线表示下跌</p>
-        <p>* 虚线为预测数据，阴影区域为预测范围</p>
+      <div className={`text-sm text-gray-500 text-center space-y-1 ${isMobile ? 'text-xs' : ''}`}>
+        {!isMobile && <p>* 红色K线表示上涨，绿色K线表示下跌</p>}
+        <p>* 虚线为预测数据{!isMobile ? '，阴影区域为预测范围' : ''}</p>
         <p>* 数据源: {chartData.metadata.dataSource}</p>
-        <p>* 最后更新: {new Date(chartData.metadata.lastHistoricalTime).toLocaleString('zh-CN')}</p>
+        {!isMobile && <p>* 最后更新: {new Date(chartData.metadata.lastHistoricalTime).toLocaleString('zh-CN')}</p>}
       </div>
     </div>
   );

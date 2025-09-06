@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { MarketType, type MarketInfo } from '@/types';
+import React from 'react';
 
 /**
  * 股票和指数的中文名称映射
@@ -749,7 +750,8 @@ export function isValidDate(dateString: string): boolean {
 }
 
 /**
- * 格式化日期时间
+ * 格式化日期时间为中文显示格式
+ * 注意：后端已经统一转换为 UTC+8 时间，前端直接显示即可
  */
 export function formatDateTime(dateString: string): string {
   try {
@@ -757,14 +759,14 @@ export function formatDateTime(dateString: string): string {
       throw new Error('Invalid date');
     }
     const date = new Date(dateString);
+    // 后端已经提供 UTC+8 时间，直接格式化显示
     return date.toLocaleString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit',
-      timeZone: 'Asia/Shanghai'
+      second: '2-digit'
     });
   } catch (error) {
     console.warn('Date formatting error:', error);
@@ -953,6 +955,56 @@ export function getSymbolDisplayName(symbol: string, marketType?: MarketType): s
   }
   
   return symbol;
+}
+
+/**
+ * 检测是否为移动端设备
+ */
+export function isMobile(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  // 检查用户代理
+  const userAgent = navigator.userAgent.toLowerCase();
+  const mobileKeywords = ['android', 'webos', 'iphone', 'ipad', 'ipod', 'blackberry', 'windows phone'];
+  const isMobileUA = mobileKeywords.some(keyword => userAgent.includes(keyword));
+  
+  // 检查屏幕宽度
+  const isSmallScreen = window.innerWidth <= 768;
+  
+  // 检查触摸支持
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  
+  return isMobileUA || (isSmallScreen && isTouchDevice);
+}
+
+/**
+ * 检测是否为小屏幕设备（包括平板竖屏）
+ */
+export function isSmallScreen(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.innerWidth <= 768;
+}
+
+/**
+ * 使用 React Hook 检测移动端设备
+ */
+export function useIsMobile(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  const [isMobileDevice, setIsMobileDevice] = React.useState(false);
+  
+  React.useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobileDevice(isMobile());
+    };
+    
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+  
+  return isMobileDevice;
 }
 
 /**
