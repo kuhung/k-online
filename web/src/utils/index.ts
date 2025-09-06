@@ -876,7 +876,7 @@ export function getMarketInfo(marketType: MarketType): MarketInfo {
     [MarketType.INDEX]: {
       type: MarketType.INDEX,
       name: '股指市场',
-      icon: '📈',
+      icon: '🎯',
       description: '股票指数市场'
     }
   };
@@ -965,13 +965,28 @@ export function groupPredictionsByMarket(predictions: Record<string, any>): Reco
     [MarketType.CRYPTO]: {}
   };
 
+  // 先按市场类型分组
   Object.entries(predictions).forEach(([symbol, prediction]) => {
     const marketType = getMarketType(symbol);
     grouped[marketType][symbol] = {
       ...prediction,
       market_type: marketType,
-      display_name: getSymbolDisplayName(symbol, marketType) // 添加显示名称
+      display_name: getSymbolDisplayName(symbol, marketType)
     };
+  });
+
+  // 对每个市场内的标的进行排序
+  Object.keys(grouped).forEach((marketType) => {
+    const sortedEntries = Object.entries(grouped[marketType as MarketType]).sort((a, b) => {
+      // 如果是股指市场，让上证指数（000001）排在最前面
+      if (marketType === MarketType.INDEX) {
+        if (a[0] === '000001') return -1;
+        if (b[0] === '000001') return 1;
+      }
+      return a[0].localeCompare(b[0]);
+    });
+    
+    grouped[marketType as MarketType] = Object.fromEntries(sortedEntries);
   });
 
   return grouped;

@@ -15,13 +15,14 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 # --- Configuration ---
 Config = {
     "SYMBOL": 'BTCUSDT',  # 保持原有的单一标的配置
-    "TARGET_SYMBOLS": ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT'],
+    "TARGET_SYMBOLS": ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT', 'V2EXUSDT'],
     "SYMBOL_NAMES": {  # 标的名称映射
         'BTCUSDT': '比特币 / USDT',
         'ETHUSDT': '以太坊 / USDT',
         'SOLUSDT': 'Solana / USDT',
         'XRPUSDT': '瑞波币 / USDT',
         'DOGEUSDT': '狗狗币 / USDT',
+        'V2EXUSDT': 'V2EX / USDT',
     },
     "INTERVAL": '1d',  # 默认使用天级别数据
     "HIST_POINTS": 360,

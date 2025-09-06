@@ -24,6 +24,7 @@ class CryptoDataFetcher(DataFetcher):
         'SOLUSDT': 'Solana / USDT',
         'XRPUSDT': '瑞波币 / USDT',
         'DOGEUSDT': '狗狗币 / USDT',
+        'V2EXUSDT': 'V2EX / USDT',
     }
     
     SUPPORTED_SYMBOLS = list(SYMBOL_NAMES.keys())
