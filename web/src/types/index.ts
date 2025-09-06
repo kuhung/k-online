@@ -1,3 +1,17 @@
+// 市场类型枚举
+export enum MarketType {
+  CRYPTO = 'crypto',
+  INDEX = 'index'
+}
+
+// 市场信息接口
+export interface MarketInfo {
+  type: MarketType;
+  name: string;
+  icon: string;
+  description: string;
+}
+
 // K线预测数据类型定义
 export interface KlinePrediction {
   symbol: string;
@@ -8,6 +22,7 @@ export interface KlinePrediction {
   volatility_amplification_probability: string;
   chart_image_base64: string;
   data_source: string;
+  market_type?: MarketType; // 可选字段，用于兼容现有数据
 }
 
 // 多标的预测数据类型
@@ -35,6 +50,7 @@ export interface StockSelectorProps {
   predictions: PredictionsData;
   selectedSymbol: string | null;
   onSymbolSelect: (symbol: string) => void;
+  groupByMarket?: boolean; // 是否按市场分组显示
 }
 
 export interface PredictionDetailProps {

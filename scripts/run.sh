@@ -130,7 +130,7 @@ process_crypto() {
 
 # 处理A股指数市场
 process_index() {
-    local interval="${1:-60}"
+    local interval="${1:-15}"
     echo "处理A股指数市场 (间隔: $interval)..."
     
     if [[ "$SKIP_FETCH" == "false" ]]; then

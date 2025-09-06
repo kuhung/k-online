@@ -1,4 +1,5 @@
 import { clsx, type ClassValue } from 'clsx';
+import { MarketType, type MarketInfo } from '@/types';
 
 /**
  * 合并CSS类名
@@ -112,4 +113,62 @@ export function formatImageDataUrl(base64String: string): string {
     return base64String;
   }
   return `data:image/png;base64,${base64String}`;
+}
+
+/**
+ * 根据标的代码识别市场类型
+ */
+export function getMarketType(symbol: string): MarketType {
+  // 加密货币通常以USDT结尾
+  if (symbol.endsWith('USDT')) {
+    return MarketType.CRYPTO;
+  }
+  // 股指通常是纯数字代码
+  if (/^\d+$/.test(symbol)) {
+    return MarketType.INDEX;
+  }
+  // 默认返回加密货币类型
+  return MarketType.CRYPTO;
+}
+
+/**
+ * 获取市场信息
+ */
+export function getMarketInfo(marketType: MarketType): MarketInfo {
+  const marketInfoMap: Record<MarketType, MarketInfo> = {
+    [MarketType.CRYPTO]: {
+      type: MarketType.CRYPTO,
+      name: '加密货币市场',
+      icon: '₿',
+      description: '数字资产交易市场'
+    },
+    [MarketType.INDEX]: {
+      type: MarketType.INDEX,
+      name: '股指市场',
+      icon: '📈',
+      description: '股票指数市场'
+    }
+  };
+  
+  return marketInfoMap[marketType];
+}
+
+/**
+ * 按市场类型分组预测数据
+ */
+export function groupPredictionsByMarket(predictions: Record<string, any>): Record<MarketType, Record<string, any>> {
+  const grouped: Record<MarketType, Record<string, any>> = {
+    [MarketType.CRYPTO]: {},
+    [MarketType.INDEX]: {}
+  };
+
+  Object.entries(predictions).forEach(([symbol, prediction]) => {
+    const marketType = getMarketType(symbol);
+    grouped[marketType][symbol] = {
+      ...prediction,
+      market_type: marketType
+    };
+  });
+
+  return grouped;
 }

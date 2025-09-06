@@ -25,13 +25,14 @@ export const MainContent: React.FC<MainContentProps> = ({
   return (
     <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 lg:gap-8">
       {/* 左侧：标的选择器 */}
-      <div className="xl:col-span-1">
+      <div className="xl:col-span-1 relative z-20">
         <div className="sticky top-6 flex flex-col gap-6 lg:gap-8 flex-col md:flex-col-reverse">
           <StatsPanel predictions={predictions} symbolList={symbolList} />
           <StockSelector
             predictions={predictions}
             selectedSymbol={selectedSymbol}
             onSymbolSelect={onSymbolSelect}
+            groupByMarket={true}
           />
         </div>
       </div>
