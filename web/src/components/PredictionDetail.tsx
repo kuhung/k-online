@@ -1,7 +1,7 @@
 import React from 'react';
 import { Calendar, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
 import { PredictionDetailProps } from '@/types';
-import { formatDateTime, formatPercentage, getDirectionColor, cn } from '@/utils';
+import { formatDateTime, formatPercentage, getDirectionColor, cn, getSymbolDisplayName, getFormattedSymbol } from '@/utils';
 import { PredictionDetailSkeleton } from './SkeletonLoader';
 
 export const PredictionDetail: React.FC<PredictionDetailProps> = ({
@@ -45,7 +45,12 @@ export const PredictionDetail: React.FC<PredictionDetailProps> = ({
       <div className="card">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div className="mb-4 md:mb-0">
-            <h2 className="text-2xl font-bold text-gray-900">{prediction.symbol}</h2>
+            <div className="flex items-center space-x-3 mb-2">
+              <h2 className="text-2xl font-bold text-gray-900">{getFormattedSymbol(prediction.symbol)}</h2>
+              <span className="text-lg font-medium text-gray-700">
+                {prediction.display_name || getSymbolDisplayName(prediction.symbol)}
+              </span>
+            </div>
             <p className="text-gray-600">{prediction.name}</p>
             <div className="flex items-center space-x-2 text-sm text-gray-500 mt-2">
               <Calendar className="w-4 h-4" />

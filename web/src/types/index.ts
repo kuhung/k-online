@@ -1,7 +1,7 @@
 // 市场类型枚举
 export enum MarketType {
-  CRYPTO = 'crypto',
-  INDEX = 'index'
+  INDEX = 'index',  // 股指市场优先
+  CRYPTO = 'crypto' // 加密货币市场其次
 }
 
 // 市场信息接口
@@ -23,6 +23,7 @@ export interface KlinePrediction {
   chart_image_base64: string;
   data_source: string;
   market_type?: MarketType; // 可选字段，用于兼容现有数据
+  display_name?: string; // 中文显示名称
 }
 
 // 多标的预测数据类型

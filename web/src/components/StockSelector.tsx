@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronDown, TrendingUp, TrendingDown, Database, ChevronRight } from 'lucide-react';
 import { StockSelectorProps, MarketType } from '@/types';
-import { cn, getDirectionColor, groupPredictionsByMarket, getMarketInfo } from '@/utils';
+import { cn, getDirectionColor, groupPredictionsByMarket, getMarketInfo, getSymbolDisplayName, getFormattedSymbol } from '@/utils';
 
 export const StockSelector: React.FC<StockSelectorProps> = ({
   predictions,
@@ -9,7 +9,7 @@ export const StockSelector: React.FC<StockSelectorProps> = ({
   onSymbolSelect,
   groupByMarket = true,
 }) => {
-  const [expandedMarkets, setExpandedMarkets] = useState<Set<MarketType>>(new Set([MarketType.CRYPTO, MarketType.INDEX]));
+  const [expandedMarkets, setExpandedMarkets] = useState<Set<MarketType>>(new Set([MarketType.INDEX, MarketType.CRYPTO]));
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   const symbolList = Object.keys(predictions);
@@ -94,8 +94,10 @@ export const StockSelector: React.FC<StockSelectorProps> = ({
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center space-x-2 mb-1">
-                                <span className="font-semibold text-gray-900 text-sm">{symbol}</span>
-                                <span className="text-xs text-gray-500 truncate">{prediction.name}</span>
+                                <span className="font-semibold text-gray-900 text-sm">{getFormattedSymbol(symbol)}</span>
+                                <span className="text-xs text-gray-500 truncate">
+                                  {prediction.display_name || getSymbolDisplayName(symbol)}
+                                </span>
                               </div>
                               <div className="flex items-center space-x-3">
                                 <div className={cn('flex items-center space-x-1 text-xs font-medium', getDirectionColor(prediction.direction))}>
@@ -140,8 +142,10 @@ export const StockSelector: React.FC<StockSelectorProps> = ({
           <div className="flex-1 min-w-0">
             {selectedPrediction ? (
               <div className="flex items-center space-x-2">
-                <span className="font-medium text-gray-900 text-sm">{selectedSymbol}</span>
-                <span className="text-xs text-gray-500 truncate">{selectedPrediction.name}</span>
+                <span className="font-medium text-gray-900 text-sm">{selectedSymbol && getFormattedSymbol(selectedSymbol)}</span>
+                <span className="text-xs text-gray-500 truncate">
+                  {selectedPrediction.display_name || (selectedSymbol && getSymbolDisplayName(selectedSymbol))}
+                </span>
               </div>
             ) : (
               <span className="text-gray-500 text-sm">请选择标的</span>
@@ -181,7 +185,9 @@ export const StockSelector: React.FC<StockSelectorProps> = ({
                           selectedSymbol === symbol ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'
                         )}
                       >
-                        <span>{symbol} <span className="text-xs text-gray-500">{predictions[symbol].name}</span></span>
+                        <span>{getFormattedSymbol(symbol)} <span className="text-xs text-gray-500">
+                          {predictions[symbol].display_name || getSymbolDisplayName(symbol)}
+                        </span></span>
                         {selectedSymbol === symbol && <div className="w-2 h-2 rounded-full bg-primary-500" />}
                       </button>
                     ))}
@@ -217,7 +223,7 @@ export const StockSelector: React.FC<StockSelectorProps> = ({
               const prediction = predictions[symbol];
               return (
                 <option key={symbol} value={symbol} className="truncate">
-                  {symbol} {prediction.name ? `- ${prediction.name}` : ''}
+                  {getFormattedSymbol(symbol)} - {prediction.display_name || getSymbolDisplayName(symbol)}
                 </option>
               );
             })}
@@ -247,8 +253,10 @@ export const StockSelector: React.FC<StockSelectorProps> = ({
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-2">
-                        <span className="font-semibold text-gray-900 text-sm">{symbol}</span>
-                        <span className="text-xs text-gray-500 truncate">{prediction.name}</span>
+                        <span className="font-semibold text-gray-900 text-sm">{getFormattedSymbol(symbol)}</span>
+                        <span className="text-xs text-gray-500 truncate">
+                          {prediction.display_name || getSymbolDisplayName(symbol)}
+                        </span>
                       </div>
                       <div className="flex items-center space-x-3">
                         <div className={cn('flex items-center space-x-1 text-xs font-medium', getDirectionColor(prediction.direction))}>

@@ -4,6 +4,7 @@ import { PredictionDetail } from './PredictionDetail';
 import { ChartDisplay } from './ChartDisplay';
 import { StatsPanel } from './StatsPanel';
 import { PredictionsData, KlinePrediction } from '@/types';
+import { getSymbolDisplayName, getFormattedSymbol } from '@/utils';
 
 interface MainContentProps {
   predictions: PredictionsData;
@@ -51,7 +52,7 @@ export const MainContent: React.FC<MainContentProps> = ({
             <div className="card p-4 sm:p-6 lg:p-8">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 lg:mb-6">
                 <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-0">
-                  预测图表 ({selectedPrediction.symbol})
+                  预测图表 ({getFormattedSymbol(selectedPrediction.symbol)} - {selectedPrediction.display_name || getSymbolDisplayName(selectedPrediction.symbol)})
                 </h3>
                 <div className="text-sm text-gray-500">
                   下个24小时预测
