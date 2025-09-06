@@ -1,4 +1,5 @@
 import { PredictionsData, ApiResponse, KlinePrediction } from '@/types';
+import { normalizeUtcDate } from '@/utils';
 
 class ApiService {
   private blobUrl: string | null = null;
@@ -46,11 +47,21 @@ class ApiService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      const data = await response.json();
+      const rawData = await response.json();
+      
+      // 处理并标准化日期
+      const normalizedData = Object.entries(rawData).reduce((acc, [symbol, prediction]) => {
+        const pred = prediction as KlinePrediction;
+        acc[symbol] = {
+          ...pred,
+          updated_at_utc: normalizeUtcDate(pred.updated_at_utc)
+        };
+        return acc;
+      }, {} as PredictionsData);
       
       return {
         success: true,
-        data,
+        data: normalizedData,
       };
     } catch (error) {
       console.error('Failed to fetch predictions:', error);

@@ -60,6 +60,10 @@ class CryptoPredictor(MarketPredictor):
             freq=freq
         )
     
+    def _filter_trading_hours(self, df: pd.DataFrame) -> pd.DataFrame:
+        """过滤数据，加密货币市场24小时交易，不需要过滤"""
+        return df  # 加密货币市场24小时交易，返回所有数据
+    
     def get_market_type(self) -> str:
         """获取市场类型"""
         return "crypto"

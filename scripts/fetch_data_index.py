@@ -30,7 +30,16 @@ def get_interval_display_name(interval: str) -> str:
     """将时间间隔转换为显示名称"""
     interval_map = {
         '60': '1h',
-        '60min': '1h'
+        '60min': '1h',
+        '1': '1min',
+        '5': '5min',
+        '15': '15min',
+        '30': '30min',
+        '60': '1h',
+        '120': '2h',
+        '240': '4h',
+        '480': '8h',
+        '720': '12h'
     }
     return interval_map.get(interval, interval)
 

@@ -90,8 +90,11 @@ class MarketPredictor(ABC):
     def make_prediction(self, df: pd.DataFrame, symbol: str) -> Dict[str, Any]:
         """生成预测结果"""
         try:
+            # 过滤数据，确保只包含交易时间的数据
+            df_filtered = self._filter_trading_hours(df)
+            
             # 准备数据
-            df_for_model = df.tail(self.get_hist_points() + self.get_vol_window()).iloc[:-1]
+            df_for_model = df_filtered.tail(self.get_hist_points() + self.get_vol_window())
             hist_df_for_plot = df_for_model.tail(self.get_hist_points())
             hist_df_for_metrics = df_for_model.tail(self.get_vol_window())
             
@@ -195,7 +198,7 @@ class MarketPredictor(ABC):
         volume_preds_df: pd.DataFrame,
         symbol: str
     ) -> str:
-        """生成预测图表"""
+        """生成预测图表 - 使用连续x轴显示，隐藏非交易时间间隔"""
         logger.info("生成预测图表...")
         fig, (ax1, ax2) = plt.subplots(
             2, 1, figsize=(15, 10),
@@ -207,14 +210,18 @@ class MarketPredictor(ABC):
         last_hist_time = hist_time.iloc[-1]
         pred_time = self._generate_prediction_timestamps(last_hist_time)
         
+        # 创建连续的x轴索引来避免显示非交易时间的间隔
+        hist_indices = list(range(len(hist_time)))
+        pred_indices = list(range(len(hist_time), len(hist_time) + len(pred_time)))
+        
         # 绘制价格图
-        ax1.plot(hist_time, hist_df['close'], color='royalblue',
+        ax1.plot(hist_indices, hist_df['close'], color='royalblue',
                 label='Historical Price', linewidth=1.5)
         mean_preds = close_preds_df.mean(axis=1)
-        ax1.plot(pred_time, mean_preds, color='darkorange',
+        ax1.plot(pred_indices, mean_preds, color='darkorange',
                 linestyle='-', label='Average Prediction')
         ax1.fill_between(
-            pred_time,
+            pred_indices,
             close_preds_df.min(axis=1),
             close_preds_df.max(axis=1),
             color='darkorange',
@@ -234,26 +241,44 @@ class MarketPredictor(ABC):
         ax1.grid(True, which='both', linestyle='--', linewidth=0.5)
         
         # 绘制成交量图
-        ax2.bar(hist_time, hist_df['volume'], color='skyblue',
-                label='Historical Volume', width=0.03)
-        ax2.bar(pred_time, volume_preds_df.mean(axis=1),
-                color='sandybrown', label='Predicted Average Volume', width=0.03)
+        ax2.bar(hist_indices, hist_df['volume'], color='skyblue',
+                label='Historical Volume', width=0.8)
+        ax2.bar(pred_indices, volume_preds_df.mean(axis=1),
+                color='sandybrown', label='Predicted Average Volume', width=0.8)
         ax2.set_ylabel('Volume')
-        ax2.set_xlabel('Time (UTC)')
+        ax2.set_xlabel('Time Periods (Trading Hours Only)')
         ax2.legend()
         ax2.grid(True, which='both', linestyle='--', linewidth=0.5)
         
-        # 添加分隔线
+        # 添加分隔线和时间戳标记
+        separation_point = len(hist_time) - 0.5
+        last_time_str = last_hist_time.strftime('%Y/%m/%d %H:%M') # 更改时间格式以包含年份
         for ax in [ax1, ax2]:
-            ax.axvline(x=last_hist_time, color='red',
+            ax.axvline(x=separation_point, color='red',
                       linestyle='--', linewidth=1.5, label='_nolegend_')
-            ax.tick_params(axis='x', rotation=30)
+            # 添加最新数据时间戳标记 (横向显示，包含年份)
+            y_pos = ax.get_ylim()[1] * 0.95  # 调整y轴位置，使其在图表内部稍低一些
+            ax.text(separation_point, y_pos, last_time_str,
+                   rotation=0, color='red', va='top', ha='center',
+                   fontsize=10, bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'))
+        
+        # 设置x轴标签 - 显示关键时间点
+        all_times = list(hist_time) + list(pred_time)
+        all_indices = hist_indices + pred_indices
+        
+        # 选择显示的时间点 - 每隔一定间隔显示一个
+        step = max(1, len(all_times) // 10)  # 显示大约10个时间标签
+        tick_indices = all_indices[::step]
+        tick_labels = [all_times[i].strftime('%m/%d %H:%M') for i in range(0, len(all_times), step)]
+        
+        ax2.set_xticks(tick_indices)
+        ax2.set_xticklabels(tick_labels, rotation=45, ha='right')
         
         fig.tight_layout()
         
         # 转换为base64
         buf = io.BytesIO()
-        fig.savefig(buf, format='png', dpi=120)
+        fig.savefig(buf, format='png', dpi=120, bbox_inches='tight')
         buf.seek(0)
         img_base64 = base64.b64encode(buf.read()).decode('utf-8')
         plt.close(fig)
@@ -263,6 +288,11 @@ class MarketPredictor(ABC):
     @abstractmethod
     def _generate_prediction_timestamps(self, last_timestamp: datetime) -> pd.DatetimeIndex:
         """生成预测时间序列"""
+        pass
+    
+    @abstractmethod
+    def _filter_trading_hours(self, df: pd.DataFrame) -> pd.DataFrame:
+        """过滤数据，仅保留交易时间的数据"""
         pass
     
     @abstractmethod

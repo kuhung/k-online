@@ -5,7 +5,10 @@ A股指数市场预测器
 from datetime import datetime, timedelta
 import pandas as pd
 from typing import Tuple
+import logging
 from market_predictor import MarketPredictor
+
+logger = logging.getLogger(__name__)
 
 class IndexPredictor(MarketPredictor):
     """A股指数市场预测器"""
@@ -23,9 +26,12 @@ class IndexPredictor(MarketPredictor):
         self.interval_hours = self.INTERVAL_MAPPING[interval]
     
     def get_prediction_horizon(self) -> int:
-        """获取预测周期"""
-        base_horizon = 24  # 基础预测周期（小时）
-        return max(1, int(base_horizon / self.interval_hours))
+        """获取预测周期
+        对于A股市场，一个交易日包含4小时交易时间（上午9:30-11:30，下午13:00-15:00）
+        """
+        trading_hours = 4  # A股市场一天交易4小时
+        points_per_hour = int(60 / int(self.interval))  # 每小时的数据点数
+        return trading_hours * points_per_hour  # 返回一个交易日所需的数据点数
     
     def get_vol_window(self) -> int:
         """获取波动率窗口大小"""
@@ -58,6 +64,13 @@ class IndexPredictor(MarketPredictor):
         remaining_periods = self.get_prediction_horizon()
         
         while remaining_periods > 0:
+            # 检查是否在工作日
+            if current_time.weekday() >= 5:  # 周六(5)和周日(6)
+                # 跳到下一个周一
+                days_ahead = 7 - current_time.weekday()
+                current_time = current_time.replace(hour=9, minute=30) + timedelta(days=days_ahead)
+                continue
+                
             # 检查是否在交易时间内
             hour = current_time.hour
             minute = current_time.minute
@@ -68,9 +81,8 @@ class IndexPredictor(MarketPredictor):
                (hour == 12) or \
                (hour >= 15):
                 if hour >= 15:  # 如果超过收盘时间，跳到下一个交易日
-                    current_time = current_time.replace(
-                        hour=9, minute=30
-                    ) + timedelta(days=1)
+                    next_day = current_time + timedelta(days=1)
+                    current_time = next_day.replace(hour=9, minute=30)
                 elif hour == 11 and minute >= 30:  # 如果是午休时间
                     current_time = current_time.replace(hour=13, minute=0)
                 else:  # 其他情况，前进到开盘时间
@@ -82,6 +94,53 @@ class IndexPredictor(MarketPredictor):
             remaining_periods -= 1
         
         return pd.DatetimeIndex(timestamps)
+    
+    def _filter_trading_hours(self, df: pd.DataFrame) -> pd.DataFrame:
+        """过滤数据，仅保留A股交易时间的数据"""
+        if df.empty:
+            return df
+            
+        df = df.copy()
+        
+        # 确保timestamps列是datetime类型
+        if 'timestamps' not in df.columns:
+            raise ValueError("数据框必须包含'timestamps'列")
+        
+        df['timestamps'] = pd.to_datetime(df['timestamps'])
+        
+        # 提取时间信息
+        df['hour'] = df['timestamps'].dt.hour
+        df['minute'] = df['timestamps'].dt.minute
+        df['weekday'] = df['timestamps'].dt.weekday  # 0=Monday, 6=Sunday
+        
+        # 定义交易时间条件
+        # A股交易时间：周一到周五 9:30-11:30, 13:00-15:00
+        trading_hours_condition = (
+            # 工作日（周一到周五）
+            (df['weekday'] < 5) &
+            # 交易时间段
+            (
+                # 上午：9:30-11:30
+                ((df['hour'] == 9) & (df['minute'] >= 30)) |
+                (df['hour'] == 10) |
+                ((df['hour'] == 11) & (df['minute'] <= 30)) |
+                # 下午：13:00-15:00
+                (df['hour'] == 13) |
+                (df['hour'] == 14) |
+                ((df['hour'] == 15) & (df['minute'] == 0))
+            )
+        )
+        
+        # 应用过滤条件
+        filtered_df = df[trading_hours_condition].copy()
+        
+        # 删除临时列
+        filtered_df = filtered_df.drop(['hour', 'minute', 'weekday'], axis=1)
+        
+        if len(filtered_df) < len(df):
+            logger.info(f"交易时间过滤：从 {len(df)} 条数据过滤到 {len(filtered_df)} 条数据")
+        
+        return filtered_df
     
     def get_market_type(self) -> str:
         """获取市场类型"""

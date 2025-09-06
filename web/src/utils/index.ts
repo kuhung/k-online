@@ -8,10 +8,22 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * 验证日期字符串是否有效
+ */
+export function isValidDate(dateString: string): boolean {
+  if (!dateString) return false;
+  const date = new Date(dateString);
+  return date instanceof Date && !isNaN(date.getTime());
+}
+
+/**
  * 格式化日期时间
  */
 export function formatDateTime(dateString: string): string {
   try {
+    if (!isValidDate(dateString)) {
+      throw new Error('Invalid date');
+    }
     const date = new Date(dateString);
     return date.toLocaleString('zh-CN', {
       year: 'numeric',
@@ -20,9 +32,27 @@ export function formatDateTime(dateString: string): string {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
+      timeZone: 'Asia/Shanghai'
     });
   } catch (error) {
-    return dateString;
+    console.warn('Date formatting error:', error);
+    return '数据更新时间未知';
+  }
+}
+
+/**
+ * 标准化UTC日期字符串
+ */
+export function normalizeUtcDate(dateString: string): string {
+  try {
+    if (!isValidDate(dateString)) {
+      throw new Error('Invalid date');
+    }
+    const date = new Date(dateString);
+    return date.toISOString();
+  } catch (error) {
+    console.warn('Date normalization error:', error);
+    return new Date().toISOString(); // 返回当前时间作为后备
   }
 }
 
