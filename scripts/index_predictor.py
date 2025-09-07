@@ -96,7 +96,11 @@ class IndexPredictor(MarketPredictor):
         return pd.DatetimeIndex(timestamps)
     
     def _filter_trading_hours(self, df: pd.DataFrame) -> pd.DataFrame:
-        """过滤数据，仅保留A股交易时间的数据"""
+        """过滤数据，仅保留A股交易时间的数据
+        
+        对于历史数据预测，我们需要保留所有有效的交易时间数据，
+        而不是基于当前时间来过滤
+        """
         if df.empty:
             return df
             
@@ -137,7 +141,23 @@ class IndexPredictor(MarketPredictor):
         # 删除临时列
         filtered_df = filtered_df.drop(['hour', 'minute', 'weekday'], axis=1)
         
-        if len(filtered_df) < len(df):
+        # 如果过滤后数据为空，但原始数据不为空，说明可能是时间范围问题
+        # 在这种情况下，我们提供更详细的日志信息
+        if len(filtered_df) == 0 and len(df) > 0:
+            logger.warning(f"交易时间过滤后无数据！原始数据时间范围: {df['timestamps'].min()} 到 {df['timestamps'].max()}")
+            logger.warning("这可能是因为数据时间不在交易时间范围内，或者是非交易日的数据")
+            
+            # 对于指数预测，如果是历史数据分析，我们可以放宽限制
+            # 检查数据是否都是历史数据（比当前时间早）
+            current_time = pd.Timestamp.now()
+            if df['timestamps'].max() < current_time - pd.Timedelta(days=1):
+                logger.info("检测到历史数据分析模式，返回所有工作日数据")
+                # 只过滤工作日，不过滤具体时间
+                weekday_condition = df['weekday'] < 5
+                filtered_df = df[weekday_condition].copy()
+                filtered_df = filtered_df.drop(['hour', 'minute', 'weekday'], axis=1)
+        
+        if len(filtered_df) != len(df):
             logger.info(f"交易时间过滤：从 {len(df)} 条数据过滤到 {len(filtered_df)} 条数据")
         
         return filtered_df

@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { AlertCircle } from 'lucide-react';
 import { ChartData, CandlestickPoint, DataPoint } from '@/types/chart-data';
-import { useIsMobile } from '@/utils';
+import { useIsMobile, getMarketType, formatPrice } from '@/utils';
 import * as echarts from 'echarts';
 
 interface CandlestickChartProps {
@@ -20,6 +20,9 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 }) => {
   // 检测是否为移动端/小屏幕设备
   const isMobile = useIsMobile();
+  
+  // 检测市场类型
+  const marketType = getMarketType(symbol);
 
   // 处理数据格式，转换为ECharts K线图格式
   const processedData = useMemo(() => {
@@ -164,24 +167,25 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
             return `
               <div style="padding: 8px;">
                 <div style="font-weight: bold; margin-bottom: 4px;">${time}</div>
-                <div>开盘: $${values[0]?.toFixed(2)}</div>
-                <div>收盘: $${values[1]?.toFixed(2)}</div>
-                <div>最低: $${values[2]?.toFixed(2)}</div>
-                <div>最高: $${values[3]?.toFixed(2)}</div>
+                <div>开盘: ${formatPrice(values[0], marketType, symbol)}</div>
+                <div>收盘: ${formatPrice(values[1], marketType, symbol)}</div>
+                <div>最低: ${formatPrice(values[2], marketType, symbol)}</div>
+                <div>最高: ${formatPrice(values[3], marketType, symbol)}</div>
               </div>
             `;
           } else if (data.seriesName === '预测均价') {
             return `
               <div style="padding: 8px;">
                 <div style="font-weight: bold; margin-bottom: 4px;">${time}</div>
-                <div>预测价格: $${data.value[1]?.toFixed(2)}</div>
+                <div>预测价格: ${formatPrice(data.value[1], marketType, symbol)}</div>
               </div>
             `;
           } else if (data.seriesName.includes('成交量')) {
+            const volumeValue = Array.isArray(data.value) ? data.value[1] : data.value;
             return `
               <div style="padding: 8px;">
                 <div style="font-weight: bold; margin-bottom: 4px;">${time}</div>
-                <div>成交量: ${data.value[1]?.toLocaleString()}</div>
+                <div>成交量: ${volumeValue?.toLocaleString()}</div>
               </div>
             `;
           }

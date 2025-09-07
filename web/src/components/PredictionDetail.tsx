@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, TrendingUp, TrendingDown, RefreshCw, HelpCircle } from 'lucide-react';
+import { Calendar, TrendingUp, TrendingDown, RefreshCw, HelpCircle, CheckCircle } from 'lucide-react';
 import { PredictionDetailProps } from '@/types';
 import { formatDateTime, formatPercentage, getDirectionColor, cn, getSymbolDisplayName, getFormattedSymbol } from '@/utils';
 import { PredictionDetailSkeleton } from './SkeletonLoader';
@@ -43,7 +43,7 @@ export const PredictionDetail: React.FC<PredictionDetailProps> = ({
     ...(prediction.mode === 'backtest' && prediction.backtest_accuracy ? [{
       label: '准确',
       value: formatPercentage(prediction.backtest_accuracy) === '100.0%' ? 'True' : 'False',
-      icon: RefreshCw,
+      icon: CheckCircle,
       color: 'text-blue-600',
       explanationKey: 'backtest_accuracy' as keyof typeof MetricExplanations,
     }] : []),

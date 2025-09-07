@@ -170,7 +170,7 @@ else
     fi
 
     if [[ "$MARKET" == "all" || "$MARKET" == "index" ]]; then
-        index_interval="${INTERVAL:-60}"
+        index_interval="${INTERVAL:-15}"
         process_index "$index_interval" || exit 1
     fi
 

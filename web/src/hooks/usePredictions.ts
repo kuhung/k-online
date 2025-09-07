@@ -1,5 +1,6 @@
 import { useAppStore } from '@/store';
 import { apiService } from '@/services/api';
+import React from 'react'; // 引入 React
 
 export const usePredictions = () => {
   const {
@@ -48,24 +49,24 @@ export const usePredictions = () => {
     setSelectedSymbol(symbol);
   };
 
-  const getSelectedPrediction = () => {
+  const selectedPrediction = React.useMemo(() => {
     if (!selectedSymbol || !predictions[selectedSymbol]) {
       return null;
     }
     return predictions[selectedSymbol];
-  };
+  }, [selectedSymbol, predictions]); // 仅当 selectedSymbol 或 predictions 变化时才重新计算
 
-  const getSymbolList = () => {
+  const symbolList = React.useMemo(() => {
     return Object.keys(predictions);
-  };
+  }, [predictions]); // 仅当 predictions 变化时才重新计算
 
   return {
     predictions,
     selectedSymbol,
     loading,
     error,
-    selectedPrediction: getSelectedPrediction(),
-    symbolList: getSymbolList(),
+    selectedPrediction,
+    symbolList,
     fetchPredictions,
     refreshPredictions,
     selectSymbol,

@@ -745,7 +745,9 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function isValidDate(dateString: string): boolean {
   if (!dateString) return false;
-  const date = new Date(dateString);
+  // 标准化日期字符串：移除微秒部分，并将 +00:00Z 替换为 Z
+  const standardizedDateString = dateString.replace(/\.\d{6}\+00:00Z$/, 'Z');
+  const date = new Date(standardizedDateString);
   return date instanceof Date && !isNaN(date.getTime());
 }
 
@@ -758,7 +760,9 @@ export function formatDateTime(dateString: string): string {
     if (!isValidDate(dateString)) {
       throw new Error('Invalid date');
     }
-    const date = new Date(dateString);
+    // 标准化日期字符串：移除微秒部分，并将 +00:00Z 替换为 Z
+    const standardizedDateString = dateString.replace(/\.\d{6}\+00:00Z$/, 'Z');
+    const date = new Date(standardizedDateString);
     // 后端提供 UTC 时间，直接格式化显示为用户本地时区
     return date.toLocaleString('zh-CN', {
       year: 'numeric',
@@ -778,7 +782,7 @@ export function formatDateTime(dateString: string): string {
 /**
  * 标准化UTC日期字符串
  */
-export function normalizeUtcDate(dateString: string): string {
+export function normalizeUtcDate(dateString: string): string | null {
   try {
     if (!isValidDate(dateString)) {
       throw new Error('Invalid date');
@@ -787,7 +791,7 @@ export function normalizeUtcDate(dateString: string): string {
     return date.toISOString();
   } catch (error) {
     console.warn('Date normalization error:', error);
-    return new Date().toISOString(); // 返回当前时间作为后备
+    return null; // 返回 null 作为后备
   }
 }
 
@@ -801,6 +805,32 @@ export function formatPercentage(value: string): string {
   }
   // 否则添加%符号
   return `${value}%`;
+}
+
+/**
+ * 根据市场类型格式化价格显示
+ * @param value 价格数值
+ * @param marketType 市场类型（可选，如果不提供会根据当前上下文自动识别）
+ * @param symbol 标的代码（用于自动识别市场类型）
+ * @returns 格式化后的价格字符串
+ */
+export function formatPrice(value: number, marketType?: MarketType, symbol?: string): string {
+  const detectedMarketType = marketType || (symbol ? getMarketType(symbol) : MarketType.INDEX);
+  
+  // 格式化数值，保留2位小数
+  const formattedValue = value.toFixed(2);
+  
+  switch (detectedMarketType) {
+    case MarketType.CRYPTO:
+      // 加密货币使用美元符号
+      return `$${formattedValue}`;
+    case MarketType.INDEX:
+      // 指数使用点数
+      return `${formattedValue}点`;
+    default:
+      // 默认情况（其他股票等）使用点数
+      return `${formattedValue}点`;
+  }
 }
 
 /**
