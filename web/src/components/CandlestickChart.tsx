@@ -164,13 +164,16 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
           
           if (data.seriesName === '历史K线') {
             const values = data.data;
+            // ECharts在category类型的xAxis下会在数据前添加dataIndex，需要跳过第一个元素
+            const hasDataIndex = values.length > 4;
+            const offset = hasDataIndex ? 1 : 0;
             return `
               <div style="padding: 8px;">
                 <div style="font-weight: bold; margin-bottom: 4px;">${time}</div>
-                <div>开盘: ${formatPrice(values[0], marketType, symbol)}</div>
-                <div>收盘: ${formatPrice(values[1], marketType, symbol)}</div>
-                <div>最低: ${formatPrice(values[2], marketType, symbol)}</div>
-                <div>最高: ${formatPrice(values[3], marketType, symbol)}</div>
+                <div>开盘: ${formatPrice(values[0 + offset], marketType, symbol)}</div>
+                <div>收盘: ${formatPrice(values[1 + offset], marketType, symbol)}</div>
+                <div>最低: ${formatPrice(values[2 + offset], marketType, symbol)}</div>
+                <div>最高: ${formatPrice(values[3 + offset], marketType, symbol)}</div>
               </div>
             `;
           } else if (data.seriesName === '预测均价') {
