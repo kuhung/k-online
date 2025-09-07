@@ -113,7 +113,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
 // 预定义的指标解释内容 (用户已简化)
 export const MetricExplanations = {
   upside_probability: {
-    title: "上涨概率",
+    title: "上涨预测",
     description: (
       <div className="space-y-1.5 text-left w-72">
         <div className="font-medium text-white text-xs">指标说明</div>
@@ -124,12 +124,23 @@ export const MetricExplanations = {
     )
   },
   volatility_amplification: {
-    title: "波动放大率",
+    title: "波动放大",
     description: (
       <div className="space-y-1.5 text-left w-72">
         <div className="font-medium text-white text-xs">指标说明</div>
         <div className="text-xs text-gray-300 leading-relaxed">
           比较预测期间波动率与历史波动率，计算预测波动率超过历史水平的概率
+        </div>
+      </div>
+    )
+  },
+  backtest_accuracy: {
+    title: "准确",
+    description: (
+      <div className="space-y-1.5 text-left w-72">
+        <div className="font-medium text-white text-xs">指标说明</div>
+        <div className="text-xs text-gray-300 leading-relaxed">
+          基于预留的历史数据验证预测方向的准确性，通过对比预测方向与实际价格变化方向计算
         </div>
       </div>
     )

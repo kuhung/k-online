@@ -32,7 +32,7 @@ class CryptoPredictor(MarketPredictor):
     
     def get_hist_points(self) -> int:
         """获取历史数据点数"""
-        return 360  # 使用360个数据点作为历史数据
+        return 300  # 使用300个数据点作为历史数据
     
     def get_market_hours(self) -> Tuple[datetime, datetime]:
         """获取市场交易时间（加密货币市场24小时交易）"""
@@ -53,7 +53,7 @@ class CryptoPredictor(MarketPredictor):
             freq_map = {24: 'D', 72: '3D', 168: 'W', 720: 'M'}
             freq = freq_map.get(self.interval_hours, 'D')
         else:  # 小时级别
-            freq = f'{int(self.interval_hours)}H'
+            freq = f'{int(self.interval_hours)}h'
         
         # 生成时间序列，确保使用 UTC+8 时区
         timestamps = pd.date_range(
@@ -80,3 +80,7 @@ class CryptoPredictor(MarketPredictor):
     def get_interval_display_name(self) -> str:
         """获取时间间隔显示名称"""
         return self.interval
+    
+    def get_validation_window(self) -> int:
+        """获取回测验证窗口大小（预留24小时的数据）"""
+        return max(1, int(24 / self.interval_hours))

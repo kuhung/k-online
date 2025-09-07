@@ -2,7 +2,7 @@
     "XRPUSDT": {
         "symbol": "XRPUSDT",
         "market_type": "crypto",
-        "updated_at_utc": "2025-09-07T11:08:54+08:00",
+        "updated_at_utc": "2025-09-07 11:08:54 CST",
         "direction": "Up",
         "upside_probability": "96.0%",
         "volatility_amplification_probability": "22.0%",

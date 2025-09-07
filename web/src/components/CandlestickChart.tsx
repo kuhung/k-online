@@ -1,8 +1,8 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { AlertCircle } from 'lucide-react';
 import { ChartData, CandlestickPoint, DataPoint } from '@/types/chart-data';
-import { isSmallScreen } from '@/utils';
+import { useIsMobile } from '@/utils';
 import * as echarts from 'echarts';
 
 interface CandlestickChartProps {
@@ -19,18 +19,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
   onChartReady
 }) => {
   // 检测是否为移动端/小屏幕设备
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(isSmallScreen());
-    };
-    
-    checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
-    
-    return () => window.removeEventListener('resize', checkIsMobile);
-  }, []);
+  const isMobile = useIsMobile();
 
   // 处理数据格式，转换为ECharts K线图格式
   const processedData = useMemo(() => {
@@ -51,6 +40,21 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       point.timestamp,
       point.value
     ]);
+
+    // 处理验证数据（回测模式）
+    const validationKline = chartData.validation?.price.map((point: CandlestickPoint) => [
+      point.timestamp,
+      point.open,
+      point.close,
+      point.low,
+      point.high,
+      point.volume
+    ]) || [];
+
+    const validationVolume = chartData.validation?.volume.map((point: DataPoint) => [
+      point.timestamp,
+      point.value
+    ]) || [];
 
     // 处理预测数据
     const predictions = chartData.predictions.price;
@@ -80,10 +84,13 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
     return {
       historicalKline,
       historicalVolume,
+      validationKline,
+      validationVolume,
       predictedMean,
       predictedRange,
       predictedVolume,
-      lastHistoricalTime: chartData.metadata.lastHistoricalTime
+      lastHistoricalTime: chartData.metadata.lastHistoricalTime,
+      isBacktest: chartData.metadata.mode === 'backtest'
     };
   }, [chartData]);
 
@@ -93,17 +100,37 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
     const { 
       historicalKline, 
       historicalVolume, 
+      validationKline,
+      validationVolume,
       predictedMean, 
       predictedRange, 
       predictedVolume,
-      lastHistoricalTime 
+      lastHistoricalTime,
+      isBacktest
     } = processedData;
 
-    // 创建时间轴数据
-    const allTimes = [
-      ...historicalKline.map(item => item[0]),
-      ...predictedMean.map(item => item[0])
-    ];
+    // 创建连续的时间轴数据，确保数据连续性
+    const allTimes: (string | number)[] = [];
+    
+    // 添加历史数据时间
+    historicalKline.forEach(item => allTimes.push(item[0]));
+    
+    // 添加预测数据时间（确保连续性）
+    predictedMean.forEach(item => {
+      if (!allTimes.includes(item[0])) {
+        allTimes.push(item[0]);
+      }
+    });
+    
+    // 添加验证数据时间（确保连续性）
+    validationKline.forEach(item => {
+      if (!allTimes.includes(item[0])) {
+        allTimes.push(item[0]);
+      }
+    });
+    
+    // 按时间排序
+    allTimes.sort();
 
     const option: echarts.EChartsOption = {
       animation: false,
@@ -163,7 +190,9 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
         }
       },
       legend: {
-        data: ['历史K线', '预测均价', '预测范围', '历史成交量', '预测成交量'],
+        data: isBacktest 
+          ? ['历史K线', '预测均价', '预测范围', '历史成交量', '预测成交量'] 
+          : ['历史K线', '预测均价', '预测范围', '历史成交量', '预测成交量'],
         top: 10,
         selected: {
           '预测上限': false,
@@ -260,11 +289,18 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
         }
       ],
       series: [
-        // 历史K线
+        // 历史K线（包含验证数据）
         {
           name: '历史K线',
           type: 'candlestick' as const,
-          data: historicalKline.map(item => [item[1], item[2], item[3], item[4]]),
+          data: allTimes.map(time => {
+            // 优先查找历史数据，如果没有则查找验证数据
+            let klineItem = historicalKline.find(item => item[0] === time);
+            if (!klineItem && isBacktest) {
+              klineItem = validationKline.find(item => item[0] === time);
+            }
+            return klineItem ? [klineItem[1], klineItem[2], klineItem[3], klineItem[4]] : null;
+          }).filter(item => item !== null),
           itemStyle: {
             color: '#ec0000',
             color0: '#00da3c',
@@ -296,7 +332,10 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
         {
           name: '预测均价',
           type: 'line' as const,
-          data: predictedMean,
+          data: allTimes.map(time => {
+            const predItem = predictedMean.find(item => item[0] === time);
+            return predItem ? [predItem[0], predItem[1]] : null;
+          }).filter(item => item !== null),
           smooth: true,
           lineStyle: {
             color: '#ff7300',
@@ -350,16 +389,28 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
           },
           showSymbol: false
         },
-        // 历史成交量
+        // 历史成交量（包含验证数据）
         ...(showVolume ? [{
           name: '历史成交量',
           type: 'bar' as const,
           xAxisIndex: 1,
           yAxisIndex: 1,
-          data: historicalVolume,
+          data: allTimes.map((time) => {
+            // 优先查找历史数据，如果没有则查找验证数据
+            let volumeItem = historicalVolume.find(item => item[0] === time);
+            if (!volumeItem && isBacktest) {
+              volumeItem = validationVolume.find(item => item[0] === time);
+            }
+            return volumeItem ? volumeItem[1] : 0;
+          }),
           itemStyle: {
             color: function(params: any) {
-              const klineData = historicalKline[params.dataIndex];
+              const time = allTimes[params.dataIndex];
+              // 优先查找历史K线数据，如果没有则查找验证K线数据
+              let klineData = historicalKline.find(item => item[0] === time);
+              if (!klineData && isBacktest) {
+                klineData = validationKline.find(item => item[0] === time);
+              }
               return klineData && klineData[2] > klineData[1] ? '#ec0000' : '#00da3c';
             }
           }
@@ -370,11 +421,14 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
           type: 'bar' as const,
           xAxisIndex: 1,
           yAxisIndex: 1,
-          data: predictedVolume,
+          data: allTimes.map(time => {
+            const volumeItem = predictedVolume.find(item => item[0] === time);
+            return volumeItem ? volumeItem[1] : 0;
+          }),
           itemStyle: {
             color: 'rgba(255, 115, 0, 0.7)'
           }
-        }] : [])
+        }] : []),
       ]
     };
 
@@ -410,9 +464,9 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
       
       <div className={`text-sm text-gray-500 text-center space-y-1 ${isMobile ? 'text-xs' : ''}`}>
         {!isMobile && <p>* 红色K线表示上涨，绿色K线表示下跌</p>}
-        <p>* 虚线为预测数据{!isMobile ? '，阴影区域为预测范围' : ''}</p>
-        <p>* 数据源: {chartData.metadata.dataSource}</p>
-        {!isMobile && <p>* 最后更新: {new Date(chartData.metadata.lastHistoricalTime).toLocaleString('zh-CN')}</p>}
+        <p>* 虚线为{processedData?.isBacktest ? '回测' : '预测'}数据{!isMobile ? '，阴影区域为预测范围' : ''}</p>
+        {processedData?.isBacktest && <p>* 分割线后为预测数据对比实际结果</p>}
+        <p>* 数据&模型: {chartData.metadata.dataSource}</p>
       </div>
     </div>
   );

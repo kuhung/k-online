@@ -160,3 +160,10 @@ class IndexPredictor(MarketPredictor):
             '30': '30min'
         }
         return interval_map.get(self.interval, self.interval)
+    
+    def get_validation_window(self) -> int:
+        """获取回测验证窗口大小（预留1个交易日的数据）"""
+        # A股市场一天交易4小时
+        trading_hours = 4
+        points_per_hour = int(60 / int(self.interval))
+        return trading_hours * points_per_hour

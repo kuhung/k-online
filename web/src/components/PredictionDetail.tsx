@@ -27,19 +27,26 @@ export const PredictionDetail: React.FC<PredictionDetailProps> = ({
 
   const metrics = [
     {
-      label: '上涨概率',
+      label: '上涨预测',
       value: formatPercentage(prediction.upside_probability),
       icon: TrendingUp,
       color: 'text-red-600',
       explanationKey: 'upside_probability' as keyof typeof MetricExplanations,
     },
     {
-      label: '波动放大率',
+      label: '波动放大',
       value: formatPercentage(prediction.volatility_amplification_probability),
       icon: RefreshCw,
       color: 'text-yellow-600',
       explanationKey: 'volatility_amplification' as keyof typeof MetricExplanations,
     },
+    ...(prediction.mode === 'backtest' && prediction.backtest_accuracy ? [{
+      label: '准确',
+      value: formatPercentage(prediction.backtest_accuracy) === '100.0%' ? 'True' : 'False',
+      icon: RefreshCw,
+      color: 'text-blue-600',
+      explanationKey: 'backtest_accuracy' as keyof typeof MetricExplanations,
+    }] : []),
   ];
 
   return (
@@ -62,24 +69,24 @@ export const PredictionDetail: React.FC<PredictionDetailProps> = ({
           </div>
 
           <div className="flex flex-col-reverse items-stretch gap-4 md:flex-row md:items-center md:space-x-6">
-            {/* 预测指标 */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* 回测指标 */}
+            <div className="flex gap-2">
               {metrics.map((metric, index) => {
                 const IconComponent = metric.icon;
                 const explanation = MetricExplanations[metric.explanationKey];
                 return (
-                  <div key={index} className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col items-center justify-center text-center md:w-40 relative">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <IconComponent className={cn('w-4 h-4', metric.color)} />
+                  <div key={index} className="bg-gray-50 p-2 rounded-lg border border-gray-100 flex flex-col items-center justify-center text-center min-w-[100px] relative">
+                    <div className="flex items-center space-x-1 mb-1">
+                      <IconComponent className={cn('w-3 h-3', metric.color)} />
                       <span className="text-xs font-medium text-gray-700">{metric.label}</span>
                       <Tooltip
                         content={explanation.description}
                         position="auto"
                       >
-                        <HelpCircle className="w-3 h-3 text-gray-400 hover:text-gray-600 cursor-help ml-1" />
+                        <HelpCircle className="w-3 h-3 text-gray-400 hover:text-gray-600 cursor-help" />
                       </Tooltip>
                     </div>
-                    <div className={cn('text-xl font-bold', metric.color)}>{metric.value}</div>
+                    <div className={cn('text-lg font-bold', metric.color)}>{metric.value}</div>
                   </div>
                 );
               })}

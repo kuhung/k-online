@@ -38,6 +38,12 @@ export interface ChartData {
     volume: PredictionSeries[]; // 成交量预测系列
   };
   
+  // 验证数据（回测模式）
+  validation?: {
+    price: CandlestickPoint[];  // 实际验证K线数据
+    volume: DataPoint[];        // 实际验证成交量数据
+  };
+  
   // 元数据
   metadata: {
     symbol: string;           // 标的符号
@@ -45,6 +51,7 @@ export interface ChartData {
     lastHistoricalTime: string; // 最后一个历史数据点的时间
     predictionHorizon: number;  // 预测的数据点数量
     dataSource: string;       // 数据源
+    mode?: string;           // 模式：backtest（回测）或 predict（预测）
   };
 }
 

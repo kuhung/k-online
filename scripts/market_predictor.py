@@ -91,27 +91,45 @@ class MarketPredictor(ABC):
         pass
     
     def make_prediction(self, df: pd.DataFrame, symbol: str, include_chart_image: bool = False) -> Dict[str, Any]:
-        """生成预测结果"""
+        """生成回测结果"""
         try:
             # 过滤数据，确保只包含交易时间的数据
             df_filtered = self._filter_trading_hours(df)
             
-            # 准备数据
-            df_for_model = df_filtered.tail(self.get_hist_points() + self.get_vol_window())
+            # 回测模式：预留验证数据
+            validation_window = self.get_validation_window()
+            total_data_needed = self.get_hist_points() + self.get_vol_window() + validation_window
+            
+            if len(df_filtered) < total_data_needed:
+                raise ValueError(f"数据不足，需要至少 {total_data_needed} 个数据点，实际只有 {len(df_filtered)} 个")
+            
+            # 分割数据：训练数据 + 验证数据
+            training_df = df_filtered.iloc[:-validation_window]
+            validation_df = df_filtered.iloc[-validation_window:]
+            
+            # 准备训练数据
+            df_for_model = training_df.tail(self.get_hist_points() + self.get_vol_window())
             hist_df_for_plot = df_for_model.tail(self.get_hist_points())
             hist_df_for_metrics = df_for_model.tail(self.get_vol_window())
             
             # 生成预测
             close_preds, volume_preds, close_preds_volatility = self._generate_predictions(df_for_model)
             
-            # 计算指标
+            # 计算指标（基于训练数据）
             upside_prob, vol_amp_prob = self._calculate_metrics(
                 hist_df_for_metrics,
                 close_preds,
                 close_preds_volatility
             )
             
-            # 生成结构化图表数据
+            # 计算回测准确率
+            backtest_accuracy = self._calculate_backtest_accuracy(
+                training_df.iloc[-1]['close'],  # 最后一个训练数据的价格
+                validation_df,
+                upside_prob >= 0.5
+            )
+            
+            # 生成结构化图表数据（包含验证数据）
             last_timestamp = df_for_model['timestamps'].max()
             prediction_timestamps = self._generate_prediction_timestamps(last_timestamp)
             chart_data = self.chart_data_generator.generate_chart_data(
@@ -122,19 +140,22 @@ class MarketPredictor(ABC):
                 last_timestamp,
                 self.get_prediction_horizon(),
                 self.get_data_source(),
-                prediction_timestamps
+                prediction_timestamps,
+                validation_df  # 传入验证数据
             )
             
             # 构建基本返回结果
             result = {
                 "symbol": symbol,
                 "market_type": self.get_market_type(),
-                "updated_at_utc": datetime.now(pytz.timezone('Asia/Shanghai')).strftime('%Y-%m-%d %H:%M:%S CST'),
+                "updated_at_utc": datetime.now(pytz.utc).isoformat() + 'Z', # Store as ISO 8601 UTC time
                 "direction": "Up" if upside_prob >= 0.5 else "Down",
                 "upside_probability": f"{upside_prob:.1%}",
                 "volatility_amplification_probability": f"{vol_amp_prob:.1%}",
+                "backtest_accuracy": f"{backtest_accuracy:.1f}%",
                 "data_source": self.get_data_source(),
-                "chart_data": chart_data
+                "chart_data": chart_data,
+                "mode": "backtest"
             }
             
             # 可选生成图表图片（向后兼容）
@@ -145,7 +166,7 @@ class MarketPredictor(ABC):
             return result
         
         except Exception as e:
-            logger.error(f"生成预测时出错: {e}")
+            logger.error(f"生成回测时出错: {e}")
             return None
     
     def _generate_predictions(
@@ -211,6 +232,23 @@ class MarketPredictor(ABC):
         
         vol_amp_prob = amplification_count / len(v_close_preds_df.columns)
         return upside_prob, vol_amp_prob
+    
+    def _calculate_backtest_accuracy(
+        self,
+        last_training_close: float,
+        validation_df: pd.DataFrame,
+        predicted_upward: bool
+    ) -> float:
+        """计算回测准确率"""
+        if validation_df.empty:
+            return 0.0
+        
+        # 获取验证期间的最终价格
+        final_validation_close = validation_df['close'].iloc[-1]
+        actual_upward = final_validation_close > last_training_close
+        
+        # 计算准确率（简单的方向预测准确率）
+        return 100.0 if predicted_upward == actual_upward else 0.0
     
     def _create_plot(
         self,
@@ -329,4 +367,9 @@ class MarketPredictor(ABC):
     @abstractmethod
     def get_interval_display_name(self) -> str:
         """获取时间间隔显示名称"""
+        pass
+    
+    @abstractmethod
+    def get_validation_window(self) -> int:
+        """获取回测验证窗口大小（需要预留的数据点数量）"""
         pass

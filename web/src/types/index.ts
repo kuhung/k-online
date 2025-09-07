@@ -15,7 +15,7 @@ export interface MarketInfo {
 // 导入图表数据类型
 export * from './chart-data';
 
-// K线预测数据类型定义（更新版本）
+// K线预测数据类型定义（更新版本 - 回测模式）
 export interface KlinePrediction {
   symbol: string;
   name: string;
@@ -26,6 +26,8 @@ export interface KlinePrediction {
   data_source: string;
   market_type?: MarketType; // 可选字段，用于兼容现有数据
   display_name?: string; // 中文显示名称
+  mode?: string; // 模式：backtest（回测）或 predict（预测）
+  backtest_accuracy?: string; // 回测准确率
   
   // 新的数据结构（优先）
   chart_data?: import('./chart-data').ChartData;

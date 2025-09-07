@@ -118,7 +118,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                     预测图表 ({getFormattedSymbol(selectedPrediction.symbol)} - {selectedPrediction.display_name || getSymbolDisplayName(selectedPrediction.symbol)})
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    未来24小时窗口
+                    过去24小时效果回顾
                   </p>
                 </div>
                 

@@ -751,7 +751,7 @@ export function isValidDate(dateString: string): boolean {
 
 /**
  * 格式化日期时间为中文显示格式
- * 注意：后端已经统一转换为 UTC+8 时间，前端直接显示即可
+ * 注意：后端提供 UTC 时间，前端将根据用户本地时区进行显示。
  */
 export function formatDateTime(dateString: string): string {
   try {
@@ -759,14 +759,15 @@ export function formatDateTime(dateString: string): string {
       throw new Error('Invalid date');
     }
     const date = new Date(dateString);
-    // 后端已经提供 UTC+8 时间，直接格式化显示
+    // 后端提供 UTC 时间，直接格式化显示为用户本地时区
     return date.toLocaleString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
+      hour12: false // 使用24小时制
     });
   } catch (error) {
     console.warn('Date formatting error:', error);
