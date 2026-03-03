@@ -17,8 +17,9 @@ class ApiService {
       if (!data.url) {
         throw new Error('Invalid response from API: URL not found');
       }
-      this.blobUrl = data.url;
-      return this.blobUrl;
+      const url: string = data.url;
+      this.blobUrl = url;
+      return url;
     } catch (error) {
       console.error('Failed to get latest prediction URL:', error);
       return '/predictions.json';
