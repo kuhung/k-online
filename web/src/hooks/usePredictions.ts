@@ -14,17 +14,16 @@ export const usePredictions = () => {
     setError,
   } = useAppStore();
 
-  const fetchPredictions = async () => {
+  const fetchPredictions = async (forceRefresh = false) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await apiService.fetchPredictions();
-      
+      const response = await apiService.fetchPredictions(forceRefresh);
+
       if (response.success && response.data) {
         setPredictions(response.data);
-        
-        // 如果还没有选中的标的，自动选择第一个
+
         if (!selectedSymbol) {
           const firstSymbol = Object.keys(response.data)[0];
           if (firstSymbol) {
@@ -34,15 +33,15 @@ export const usePredictions = () => {
       } else {
         setError(response.error || '获取数据失败');
       }
-    } catch (error) {
-      setError(error instanceof Error ? error.message : '未知错误');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '未知错误');
     } finally {
       setLoading(false);
     }
   };
 
   const refreshPredictions = () => {
-    fetchPredictions();
+    fetchPredictions(true);
   };
 
   const selectSymbol = (symbol: string) => {

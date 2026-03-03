@@ -44,9 +44,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <footer className="bg-white/60 backdrop-blur-sm border-t border-gray-200/60 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center text-sm text-gray-600">
-            <p>&copy; 2025 K-Online by Quantfull.com. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} K-Online by Quantfull.com. All rights reserved.</p>
             <p className="mt-2 text-xs text-gray-500">
               本系统基于开源机器学习算法和公开数据进行K线预测，所有预测窗口为历史数据，仅供学习交流。不涉及对未来的预测，不构成任何投资建议。预测结果可能存在误差，实际市场表现可能与预测结果存在显著差异。用户应独立判断并承担投资风险，本平台不对任何投资决策及结果负责。投资有风险，入市需谨慎，建议用户充分了解相关风险并咨询专业投资顾问。
+            </p>
+            <p className="mt-1 text-xs text-gray-400 font-mono">
+              Version: {__GIT_HASH__}
             </p>
           </div>
         </div>

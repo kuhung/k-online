@@ -3,15 +3,8 @@ import { PredictionsData, ApiResponse, KlinePrediction } from '@/types';
 class ApiService {
   private blobUrl: string | null = null;
 
-  constructor() {
-    // 在生产环境中，这可能是一个实际的API端点
-  }
-
-  /**
-   * 获取最新的预测数据URL
-   */
-  private async getLatestPredictionUrl(): Promise<string> {
-    if (this.blobUrl) {
+  private async getLatestPredictionUrl(forceRefresh = false): Promise<string> {
+    if (this.blobUrl && !forceRefresh) {
       return this.blobUrl;
     }
 
@@ -24,36 +17,28 @@ class ApiService {
       if (!data.url) {
         throw new Error('Invalid response from API: URL not found');
       }
-      const latestUrl: string = data.url;
-      this.blobUrl = latestUrl;
-      return latestUrl;
+      this.blobUrl = data.url;
+      return this.blobUrl;
     } catch (error) {
       console.error('Failed to get latest prediction URL:', error);
-      // 如果获取失败，回退到本地文件
       return '/predictions.json';
     }
   }
 
-  /**
-   * 获取所有K线预测数据
-   */
-  async fetchPredictions(): Promise<ApiResponse<PredictionsData>> {
+  async fetchPredictions(forceRefresh = false): Promise<ApiResponse<PredictionsData>> {
     try {
-      const url = await this.getLatestPredictionUrl();
+      const url = await this.getLatestPredictionUrl(forceRefresh);
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const rawData = await response.json();
-      
-      // 后端已经提供正确时区的数据，直接使用
-      const normalizedData = rawData as PredictionsData;
-      
+
       return {
         success: true,
-        data: normalizedData,
+        data: rawData as PredictionsData,
       };
     } catch (error) {
       console.error('Failed to fetch predictions:', error);
