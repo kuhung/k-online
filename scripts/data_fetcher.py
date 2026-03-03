@@ -64,7 +64,7 @@ class DataFetcher(ABC):
         """获取市场数据"""
         pass
     
-    def update_local_data(self, symbol: str) -> bool:
+    def update_local_data(self, symbol: str, max_rows: int = 5000) -> bool:
         """更新本地数据文件"""
         file_path = self.get_data_file_path(symbol)
         last_timestamp = self.get_last_timestamp(file_path)
@@ -83,6 +83,11 @@ class DataFetcher(ABC):
                     combined_data = pd.concat([existing_data, new_data])
                     combined_data = combined_data.drop_duplicates(subset=['timestamps']).sort_values('timestamps')
                     
+                    # 截断数据，只保留最近的 max_rows 行
+                    if len(combined_data) > max_rows:
+                        logger.info(f"数据量超过 {max_rows} 行，进行截断")
+                        combined_data = combined_data.tail(max_rows)
+                    
                     # 保存更新后的数据
                     combined_data.to_csv(file_path, index=False)
                     logger.info(f"更新了 {len(new_data)} 条新数据")
@@ -93,6 +98,11 @@ class DataFetcher(ABC):
                 # 首次下载数据
                 new_data = self.fetch_data(symbol)
                 if new_data is not None and not new_data.empty:
+                    # 截断数据，只保留最近的 max_rows 行
+                    if len(new_data) > max_rows:
+                        logger.info(f"数据量超过 {max_rows} 行，进行截断")
+                        new_data = new_data.tail(max_rows)
+                        
                     new_data.to_csv(file_path, index=False)
                     logger.info(f"首次下载完成，共 {len(new_data)} 条数据")
                 else:

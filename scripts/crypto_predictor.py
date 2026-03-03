@@ -31,8 +31,13 @@ class CryptoPredictor(MarketPredictor):
         return 24  # 使用24个数据点作为波动率计算窗口
     
     def get_hist_points(self) -> int:
-        """获取历史数据点数"""
-        return 300  # 使用300个数据点作为历史数据
+        """获取历史数据点数
+        
+        Kronos模型最大上下文为512。
+        预留24个点给波动率计算窗口，所以这里设置为480。
+        480 + 24 = 504 < 512，确保在模型处理范围内。
+        """
+        return 480
     
     def get_market_hours(self) -> Tuple[datetime, datetime]:
         """获取市场交易时间（加密货币市场24小时交易）"""

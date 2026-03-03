@@ -36,7 +36,7 @@ class CryptoDataFetcher(DataFetcher):
         '1d': '1d', '3d': '3d', '1w': '1w', '1M': '1M'
     }
     
-    def __init__(self, data_dir: Path, interval: str = '1h', hist_points: int = 360):
+    def __init__(self, data_dir: Path, interval: str = '1h', hist_points: int = 1000):
         super().__init__(data_dir, interval)
         self.hist_points = hist_points
         self._client = None  # 延迟初始化
