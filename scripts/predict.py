@@ -75,23 +75,19 @@ def get_symbols_for_market(market_type: str) -> List[str]:
     else:
         raise ValueError(f"不支持的市场类型: {market_type}")
 
-def main_task(symbol: str, market_type: str, interval: str) -> Dict[str, Any]:
+def main_task(symbol: str, market_type: str, interval: str, mode: str = "backtest") -> Dict[str, Any]:
     """执行单个交易对的预测任务"""
-    logger.info("\n" + "=" * 60 + f"\n开始更新 {symbol} 的预测\n" + "=" * 60)
+    mode_label = "预测" if mode == "predict" else "回测"
+    logger.info("\n" + "=" * 60 + f"\n开始{mode_label} {symbol}\n" + "=" * 60)
     
     try:
-        # 加载数据
         df = load_data(symbol, market_type, interval)
         if df is None:
             return None
         
-        # 获取预测器
         predictor = get_market_predictor(market_type, interval)
+        prediction_data = predictor.make_prediction(df, symbol, include_chart_image=False, mode=mode)
         
-        # 生成预测（默认只输出结构化数据，不生成图片以减少传输成本）
-        prediction_data = predictor.make_prediction(df, symbol, include_chart_image=False)
-        
-        # 清理内存
         del df
         gc.collect()
         
@@ -102,17 +98,17 @@ def main_task(symbol: str, market_type: str, interval: str) -> Dict[str, Any]:
         logger.error(f"处理 {symbol} 时出错: {e}")
         return None
 
-def generate_predictions(market_type: str, interval: str) -> Dict[str, Any]:
+def generate_predictions(market_type: str, interval: str, mode: str = "backtest") -> Dict[str, Any]:
     """生成指定市场的所有预测"""
     all_predictions = {}
     
     try:
         symbols = get_symbols_for_market(market_type)
         for symbol in symbols:
-            prediction_data = main_task(symbol, market_type, interval)
+            prediction_data = main_task(symbol, market_type, interval, mode=mode)
             if prediction_data:
                 all_predictions[symbol] = prediction_data
-            time.sleep(1)  # 添加延迟避免API限制
+            time.sleep(1)
     except Exception as e:
         logger.error(f"生成预测时出错: {e}")
     
@@ -128,20 +124,22 @@ if __name__ == '__main__':
                       help='数据时间间隔。对于加密货币市场: 1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,1M；'
                            '对于A股指数市场: 1,5,15,30,60')
     
+    parser.add_argument('--mode', type=str, default='backtest',
+                      choices=['backtest', 'predict'],
+                      help='运行模式: backtest (回测历史数据) 或 predict (预测未来数据)，默认 backtest')
+    
     args = parser.parse_args()
     
-    # 根据市场类型设置默认间隔
     if args.interval is None:
         args.interval = '1h' if args.market == 'crypto' else '60'
     
-    # 验证时间间隔
     if args.market == 'crypto' and args.interval not in CryptoPredictor.INTERVAL_MAPPING:
         parser.error(f"加密货币市场不支持的时间间隔: {args.interval}")
     elif args.market == 'index' and args.interval not in IndexPredictor.INTERVAL_MAPPING:
         parser.error(f"A股指数市场不支持的时间间隔: {args.interval}")
     
-    # 生成预测
-    data = generate_predictions(args.market, args.interval)
+    logger.info(f"运行模式: {'预测未来' if args.mode == 'predict' else '回测历史'}")
+    data = generate_predictions(args.market, args.interval, mode=args.mode)
     
     # 生成带时间戳的文件名
     timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')

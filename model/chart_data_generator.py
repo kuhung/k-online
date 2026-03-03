@@ -26,10 +26,11 @@ class ChartDataGenerator:
         prediction_horizon: int,
         data_source: str,
         prediction_timestamps: pd.DatetimeIndex = None,
-        validation_df: pd.DataFrame = None
+        validation_df: pd.DataFrame = None,
+        mode: str = "backtest"
     ) -> Dict[str, Any]:
         """
-        生成图表数据结构（回测模式）
+        生成图表数据结构
         
         Args:
             hist_df: 历史数据DataFrame（用于训练预测模型的数据）
@@ -40,7 +41,8 @@ class ChartDataGenerator:
             prediction_horizon: 预测周期
             data_source: 数据源
             prediction_timestamps: 预测时间戳索引
-            validation_df: 实际验证数据DataFrame（预留的真实历史数据用于验证）
+            validation_df: 实际验证数据DataFrame（回测模式下预留的真实历史数据）
+            mode: 运行模式，"backtest" 或 "predict"
             
         Returns:
             包含图表数据的字典
@@ -76,7 +78,7 @@ class ChartDataGenerator:
                     "lastHistoricalTime": last_timestamp.isoformat(),
                     "predictionHorizon": prediction_horizon,
                     "dataSource": data_source,
-                    "mode": "backtest"  # 标识为回测模式
+                    "mode": mode
                 }
             }
             

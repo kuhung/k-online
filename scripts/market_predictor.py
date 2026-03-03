@@ -90,84 +90,123 @@ class MarketPredictor(ABC):
         """获取市场交易时间"""
         pass
     
-    def make_prediction(self, df: pd.DataFrame, symbol: str, include_chart_image: bool = False) -> Dict[str, Any]:
-        """生成回测结果"""
+    def make_prediction(self, df: pd.DataFrame, symbol: str, include_chart_image: bool = False, mode: str = "backtest") -> Dict[str, Any]:
+        """生成预测/回测结果
+
+        Args:
+            df: 原始市场数据
+            symbol: 标的代码
+            include_chart_image: 是否生成图表图片（向后兼容）
+            mode: 运行模式，"backtest" 回测历史数据 或 "predict" 预测未来数据
+        """
         try:
-            # 过滤数据，确保只包含交易时间的数据
             df_filtered = self._filter_trading_hours(df)
-            
-            # 回测模式：预留验证数据
-            validation_window = self.get_validation_window()
-            total_data_needed = self.get_hist_points() + self.get_vol_window() + validation_window
-            
-            if len(df_filtered) < total_data_needed:
-                raise ValueError(f"数据不足，需要至少 {total_data_needed} 个数据点，实际只有 {len(df_filtered)} 个")
-            
-            # 分割数据：训练数据 + 验证数据
-            training_df = df_filtered.iloc[:-validation_window]
-            validation_df = df_filtered.iloc[-validation_window:]
-            
-            # 准备训练数据
-            df_for_model = training_df.tail(self.get_hist_points() + self.get_vol_window())
-            hist_df_for_plot = df_for_model.tail(self.get_hist_points())
-            hist_df_for_metrics = df_for_model.tail(self.get_vol_window())
-            
-            # 生成预测
-            close_preds, volume_preds, close_preds_volatility = self._generate_predictions(df_for_model)
-            
-            # 计算指标（基于训练数据）
-            upside_prob, vol_amp_prob = self._calculate_metrics(
-                hist_df_for_metrics,
-                close_preds,
-                close_preds_volatility
-            )
-            
-            # 计算回测准确率
-            backtest_accuracy = self._calculate_backtest_accuracy(
-                training_df.iloc[-1]['close'],  # 最后一个训练数据的价格
-                validation_df,
-                upside_prob >= 0.5
-            )
-            
-            # 生成结构化图表数据（包含验证数据）
-            last_timestamp = df_for_model['timestamps'].max()
-            prediction_timestamps = self._generate_prediction_timestamps(last_timestamp)
-            chart_data = self.chart_data_generator.generate_chart_data(
-                hist_df_for_plot,
-                close_preds,
-                volume_preds,
-                symbol,
-                last_timestamp,
-                self.get_prediction_horizon(),
-                self.get_data_source(),
-                prediction_timestamps,
-                validation_df  # 传入验证数据
-            )
-            
-            # 构建基本返回结果
-            result = {
-                "symbol": symbol,
-                "market_type": self.get_market_type(),
-                "updated_at_utc": datetime.now(pytz.utc).isoformat() + 'Z', # Store as ISO 8601 UTC time
-                "direction": "Up" if upside_prob >= 0.5 else "Down",
-                "upside_probability": f"{upside_prob:.1%}",
-                "volatility_amplification_probability": f"{vol_amp_prob:.1%}",
-                "backtest_accuracy": f"{backtest_accuracy:.1f}%",
-                "data_source": self.get_data_source(),
-                "chart_data": chart_data,
-                "mode": "backtest"
-            }
-            
-            # 可选生成图表图片（向后兼容）
-            if include_chart_image:
-                chart_base64 = self._create_plot(hist_df_for_plot, close_preds, volume_preds, symbol)
-                result["chart_image_base64"] = chart_base64
-            
-            return result
-        
+
+            if mode == "predict":
+                return self._run_predict_mode(df_filtered, symbol, include_chart_image)
+            else:
+                return self._run_backtest_mode(df_filtered, symbol, include_chart_image)
+
         except Exception as e:
-            logger.error(f"生成回测时出错: {e}")
+            logger.error(f"生成{'预测' if mode == 'predict' else '回测'}时出错: {e}")
             return None
+
+    def _run_backtest_mode(self, df_filtered: pd.DataFrame, symbol: str, include_chart_image: bool) -> Dict[str, Any]:
+        """回测模式：预留验证窗口，对比预测与实际"""
+        validation_window = self.get_validation_window()
+        total_data_needed = self.get_hist_points() + self.get_vol_window() + validation_window
+
+        if len(df_filtered) < total_data_needed:
+            raise ValueError(f"数据不足，需要至少 {total_data_needed} 个数据点，实际只有 {len(df_filtered)} 个")
+
+        training_df = df_filtered.iloc[:-validation_window]
+        validation_df = df_filtered.iloc[-validation_window:]
+
+        df_for_model = training_df.tail(self.get_hist_points() + self.get_vol_window())
+        hist_df_for_plot = df_for_model.tail(self.get_hist_points())
+        hist_df_for_metrics = df_for_model.tail(self.get_vol_window())
+
+        close_preds, volume_preds, close_preds_volatility = self._generate_predictions(df_for_model)
+
+        upside_prob, vol_amp_prob = self._calculate_metrics(
+            hist_df_for_metrics, close_preds, close_preds_volatility
+        )
+
+        backtest_accuracy = self._calculate_backtest_accuracy(
+            training_df.iloc[-1]['close'],
+            validation_df,
+            upside_prob >= 0.5
+        )
+
+        last_timestamp = df_for_model['timestamps'].max()
+        prediction_timestamps = self._generate_prediction_timestamps(last_timestamp)
+        chart_data = self.chart_data_generator.generate_chart_data(
+            hist_df_for_plot, close_preds, volume_preds, symbol,
+            last_timestamp, self.get_prediction_horizon(), self.get_data_source(),
+            prediction_timestamps, validation_df=validation_df, mode="backtest"
+        )
+
+        result = {
+            "symbol": symbol,
+            "market_type": self.get_market_type(),
+            "updated_at_utc": datetime.now(pytz.utc).isoformat() + 'Z',
+            "direction": "Up" if upside_prob >= 0.5 else "Down",
+            "upside_probability": f"{upside_prob:.1%}",
+            "volatility_amplification_probability": f"{vol_amp_prob:.1%}",
+            "backtest_accuracy": f"{backtest_accuracy:.1f}%",
+            "data_source": self.get_data_source(),
+            "chart_data": chart_data,
+            "mode": "backtest"
+        }
+
+        if include_chart_image:
+            chart_base64 = self._create_plot(hist_df_for_plot, close_preds, volume_preds, symbol)
+            result["chart_image_base64"] = chart_base64
+
+        return result
+
+    def _run_predict_mode(self, df_filtered: pd.DataFrame, symbol: str, include_chart_image: bool) -> Dict[str, Any]:
+        """预测模式：使用全部数据预测未来走势，不进行回测验证"""
+        total_data_needed = self.get_hist_points() + self.get_vol_window()
+
+        if len(df_filtered) < total_data_needed:
+            raise ValueError(f"数据不足，需要至少 {total_data_needed} 个数据点，实际只有 {len(df_filtered)} 个")
+
+        df_for_model = df_filtered.tail(self.get_hist_points() + self.get_vol_window())
+        hist_df_for_plot = df_for_model.tail(self.get_hist_points())
+        hist_df_for_metrics = df_for_model.tail(self.get_vol_window())
+
+        close_preds, volume_preds, close_preds_volatility = self._generate_predictions(df_for_model)
+
+        upside_prob, vol_amp_prob = self._calculate_metrics(
+            hist_df_for_metrics, close_preds, close_preds_volatility
+        )
+
+        last_timestamp = df_for_model['timestamps'].max()
+        prediction_timestamps = self._generate_prediction_timestamps(last_timestamp)
+        chart_data = self.chart_data_generator.generate_chart_data(
+            hist_df_for_plot, close_preds, volume_preds, symbol,
+            last_timestamp, self.get_prediction_horizon(), self.get_data_source(),
+            prediction_timestamps, validation_df=None, mode="predict"
+        )
+
+        result = {
+            "symbol": symbol,
+            "market_type": self.get_market_type(),
+            "updated_at_utc": datetime.now(pytz.utc).isoformat() + 'Z',
+            "direction": "Up" if upside_prob >= 0.5 else "Down",
+            "upside_probability": f"{upside_prob:.1%}",
+            "volatility_amplification_probability": f"{vol_amp_prob:.1%}",
+            "data_source": self.get_data_source(),
+            "chart_data": chart_data,
+            "mode": "predict"
+        }
+
+        if include_chart_image:
+            chart_base64 = self._create_plot(hist_df_for_plot, close_preds, volume_preds, symbol)
+            result["chart_image_base64"] = chart_base64
+
+        return result
     
     def _generate_predictions(
         self,

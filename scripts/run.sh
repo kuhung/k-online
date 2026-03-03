@@ -21,15 +21,19 @@ show_help() {
     echo "  -u, --upload    上传预测结果到Blob存储"
     echo "  -U, --upload-only 仅上传已有的预测结果，不进行数据获取和预测"
     echo "  -s, --skip-fetch 跳过数据获取步骤，直接使用已有数据进行预测"
+    echo "  -p, --predict   使用预测模式（预测未来数据），默认为回测模式（验证历史数据）"
     echo "  -h, --help      显示此帮助信息"
     echo
     echo "示例:"
-    echo "  $0 -m all                 # 更新所有市场数据"
-    echo "  $0 -m all -u              # 更新所有市场数据并上传"
-    echo "  $0 -m crypto -i 1h        # 仅更新加密货币数据"
-    echo "  $0 -m index -i 60         # 仅更新A股指数数据"
-    echo "  $0 -m crypto -u           # 更新加密货币数据并上传"
-    echo "  $0 -m all -s              # 使用现有数据重新生成所有预测"
+    echo "  $0 -m all                 # 回测所有市场数据（默认）"
+    echo "  $0 -m all -p              # 预测所有市场的未来走势"
+    echo "  $0 -m all -p -u           # 预测所有市场并上传"
+    echo "  $0 -m crypto -i 1h        # 仅回测加密货币数据"
+    echo "  $0 -m crypto -p           # 预测加密货币未来走势"
+    echo "  $0 -m index -i 60         # 仅回测A股指数数据"
+    echo "  $0 -m crypto -u           # 回测加密货币数据并上传"
+    echo "  $0 -m all -s              # 使用现有数据重新回测"
+    echo "  $0 -m all -s -p           # 使用现有数据预测未来"
     echo "  $0 -m crypto -s -u        # 使用现有数据重新生成加密货币预测并上传"
     echo "  $0 -U                     # 仅上传已有的预测结果"
     echo
@@ -42,6 +46,7 @@ INTERVAL=""
 UPLOAD=false
 UPLOAD_ONLY=false
 SKIP_FETCH=false
+MODE="backtest"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -63,6 +68,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -s|--skip-fetch)
             SKIP_FETCH=true
+            shift
+            ;;
+        -p|--predict)
+            MODE="predict"
             shift
             ;;
         -h|--help)
@@ -119,8 +128,8 @@ process_crypto() {
         echo "跳过数据获取步骤..."
     fi
     
-    echo "生成加密货币预测..."
-    python predict.py --market crypto --interval "$interval"
+    echo "生成加密货币预测 (模式: $MODE)..."
+    python predict.py --market crypto --interval "$interval" --mode "$MODE"
     if [ $? -ne 0 ]; then
         echo "加密货币预测失败"
         return 1
@@ -144,8 +153,8 @@ process_index() {
         echo "跳过数据获取步骤..."
     fi
     
-    echo "生成A股指数预测..."
-    python predict.py --market index --interval "$interval"
+    echo "生成A股指数预测 (模式: $MODE)..."
+    python predict.py --market index --interval "$interval" --mode "$MODE"
     if [ $? -ne 0 ]; then
         echo "A股指数预测失败"
         return 1
@@ -162,6 +171,11 @@ if [[ "$UPLOAD_ONLY" == "true" ]]; then
         exit 1
     fi
 else
+    if [[ "$MODE" == "predict" ]]; then
+        echo "运行模式: 预测未来数据"
+    else
+        echo "运行模式: 回测历史数据"
+    fi
     echo "开始执行数据更新和预测流程..."
 
     if [[ "$MARKET" == "all" || "$MARKET" == "crypto" ]]; then
@@ -172,6 +186,14 @@ else
     if [[ "$MARKET" == "all" || "$MARKET" == "index" ]]; then
         index_interval="${INTERVAL:-15}"
         process_index "$index_interval" || exit 1
+    fi
+
+    # 更新本地前端数据
+    echo "更新本地前端数据..."
+    python update_local_data.py
+    if [ $? -ne 0 ]; then
+        echo "更新本地前端数据失败"
+        exit 1
     fi
 
     # 只有在指定了-u选项时才上传
