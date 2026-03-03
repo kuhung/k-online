@@ -40,12 +40,17 @@ jobs:
       - name: Run Prediction Script
         env:
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          # 可选配置：如果需要使用 Binance.US，请在 Secrets 中设置 BINANCE_TLD 为 'us'
+          BINANCE_TLD: ${{ secrets.BINANCE_TLD }}
+          # 可选配置：如果需要通过代理访问，请在 Secrets 中设置 HTTP_PROXY 和 HTTPS_PROXY
+          HTTP_PROXY: ${{ secrets.HTTP_PROXY }}
+          HTTPS_PROXY: ${{ secrets.HTTPS_PROXY }}
         run: |
           chmod +x scripts/run.sh
           # Activate venv explicitly as the script expects it in ../.venv
           source .venv/bin/activate
-          # Run the script with upload flag
-          ./scripts/run.sh -m all -u
+          # Run the script with upload flag and predict mode
+          ./scripts/run.sh -m all -p -u
 
       - name: Commit and Push Changes
         run: |
