@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """
 A股指数数据获取实现
+
+数据源优先级（由高到低）:
+  1. AkShare   — 分钟级行情，主力来源
+  2. Yahoo Finance — 分钟级行情，第一备用
+  3. finshare  — 日线行情，最终兜底（颗粒度降级，聊胜于无）
 """
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -30,6 +35,13 @@ class IndexDataFetcher(DataFetcher):
         '000001': '000001.SS',
         '399001': '399001.SZ',
         '399006': '399006.SZ',
+    }
+
+    # finshare 默认按首位数字判断市场（'0' → 深市），上证指数 000001 需手动指定 SH 前缀
+    FINSHARE_CODE_MAPPING = {
+        '000001': 'sh000001',   # 上证指数，上交所指数
+        '399001': 'sz399001',   # 深证成指，深交所指数
+        '399006': 'sz399006',   # 创业板指，深交所指数
     }
 
     SUPPORTED_SYMBOLS = list(SYMBOL_NAMES.keys())
@@ -136,6 +148,70 @@ class IndexDataFetcher(DataFetcher):
             logger.error(f"Yahoo Finance 获取失败: {e}")
             return None
 
+    def _fetch_from_finshare(self, symbol: str, start_time: Optional[datetime] = None) -> Optional[pd.DataFrame]:
+        """从 finshare 获取日线数据作为最终兜底
+
+        注意：finshare 仅支持日线粒度，当分钟级数据源全部失效时使用。
+        返回数据的 timestamps 设置为每个交易日 15:00（A股收盘时间）。
+        """
+        try:
+            from finshare import get_data_manager
+        except ImportError:
+            logger.warning("finshare 未安装，跳过该备用源")
+            return None
+
+        logger.info(f"尝试从 finshare 获取 {self.get_symbol_name(symbol)} ({symbol}) 日线数据...")
+        try:
+            manager = get_data_manager()
+
+            # 使用预定义映射确保指数代码指向正确市场，避免 finshare 按首位数字
+            # 误判市场（如 000001 → SZ000001 平安银行，而非 SH000001 上证指数）
+            finshare_code = self.FINSHARE_CODE_MAPPING.get(symbol, symbol)
+
+            start_str = (
+                (start_time + timedelta(days=1)).strftime("%Y-%m-%d")
+                if start_time
+                else (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
+            )
+            end_str = datetime.now().strftime("%Y-%m-%d")
+
+            df = manager.get_historical_data(
+                code=finshare_code,
+                start=start_str,
+                end=end_str,
+            )
+
+            if df is None or df.empty:
+                logger.warning(f"finshare 返回空数据: {symbol}")
+                return None
+
+            # 将 trade_date 转成 datetime，并固定为 15:00 收盘时间点
+            df['timestamps'] = pd.to_datetime(df['trade_date']).apply(
+                lambda d: d.replace(hour=15, minute=0, second=0)
+            )
+
+            df.rename(columns={
+                'open_price': 'open',
+                'high_price': 'high',
+                'low_price': 'low',
+                'close_price': 'close',
+            }, inplace=True)
+
+            for col in ['open', 'high', 'low', 'close', 'volume', 'amount']:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+
+            df = df[['timestamps', 'open', 'high', 'low', 'close', 'volume', 'amount']]
+
+            if start_time:
+                df = df[df['timestamps'] > start_time]
+
+            logger.info(f"finshare 成功获取 {len(df)} 条日线数据（粒度已降级为日线）")
+            return df if not df.empty else None
+
+        except Exception as e:
+            logger.error(f"finshare 获取失败: {e}")
+            return None
+
     @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=1, max=10))
     def fetch_data(self, symbol: str, start_time: Optional[datetime] = None) -> Optional[pd.DataFrame]:
         """从AkShare获取A股指数K线数据"""
@@ -188,7 +264,11 @@ class IndexDataFetcher(DataFetcher):
             
         except Exception as e:
             logger.warning(f"AkShare 获取失败 ({e})，尝试切换到 Yahoo Finance...")
-            return self._fetch_from_yfinance(symbol, start_time)
+            result = self._fetch_from_yfinance(symbol, start_time)
+            if result is not None:
+                return result
+            logger.warning("Yahoo Finance 也失败，降级到 finshare 日线数据...")
+            return self._fetch_from_finshare(symbol, start_time)
     
     def get_all_symbols(self) -> List[str]:
         """获取所有支持的指数代码"""
