@@ -13,15 +13,66 @@
     </script>
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>K-Online 时序预测平台</title>
+    <title>K-Online 时序预测平台 | 仓满量化</title>
     <meta name="description" content="K-Online 股票预测平台 - 基于机器学习的多标的股票价格预测系统" />
     <meta name="author" content="kuhung" />
+    <link rel="canonical" href="https://k.quantfull.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="仓满量化" />
+    <meta property="og:url" content="https://k.quantfull.com/" />
+    <meta property="og:title" content="K-Online 时序预测平台 | 仓满量化" />
+    <meta property="og:description" content="用机器学习模型对多个股票与指数标的做时序预测，把 K 线和预测区间放在同一张图上对照，公开免费查看。" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "K-Online 时序预测平台",
+      "url": "https://k.quantfull.com/",
+      "description": "用机器学习模型对多个股票与指数标的做时序预测，把 K 线和预测区间放在同一张图上对照，供研究和学习使用，不构成投资建议。",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web",
+      "browserRequirements": "需要支持 JavaScript 的现代浏览器",
+      "inLanguage": "zh-CN",
+      "isAccessibleForFree": true,
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "CNY"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "kuhung",
+        "url": "https://kuhung.me"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "仓满量化",
+        "url": "https://www.quantfull.com/"
+      },
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "仓满量化",
+        "url": "https://www.quantfull.com/"
+      }
+    }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- 首屏兜底内容：JS 加载完成后被应用替换 -->
+      <main>
+        <h1>K-Online 时序预测平台</h1>
+        <p>用机器学习模型对多个股票与指数标的做时序预测，把 K 线和预测区间放在同一张图上对照。预测窗口取自历史数据，供研究和学习使用，不构成投资建议。</p>
+        <ul>
+          <li><a href="https://www.quantfull.com/">仓满量化主站：量化交易学习资料与工具</a></li>
+          <li><a href="https://www.quantfull.com/playbook">Alpha-Online 实盘手册：从因子研究到模拟交易</a></li>
+          <li><a href="https://v.quantfull.com/">Alpha101 语义宇宙：101 个因子的三维可视化</a></li>
+        </ul>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

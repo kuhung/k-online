@@ -21,13 +21,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <p className="text-sm text-gray-600">K线预测平台</p>
               </div>
             </div>
-            <a 
-              href="https://quantfull.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
+            <a
+              href="https://www.quantfull.com/"
               className="text-sm text-gray-500 hover:text-primary-600 transition-colors"
             >
-              Powered by Quantfull.com
+              仓满量化：量化交易学习资料
             </a>
           </div>
         </div>
@@ -48,7 +46,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <p className="mt-2 text-xs text-gray-500">
               本系统基于开源机器学习算法和公开数据进行K线预测，所有预测窗口为历史数据，仅供学习交流。不涉及对未来的预测，不构成任何投资建议。预测结果可能存在误差，实际市场表现可能与预测结果存在显著差异。用户应独立判断并承担投资风险，本平台不对任何投资决策及结果负责。投资有风险，入市需谨慎，建议用户充分了解相关风险并咨询专业投资顾问。
             </p>
-            <p className="mt-1 text-xs text-gray-400 font-mono">
+            <nav aria-label="仓满量化站点导航" className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-gray-500">
+              <a href="https://www.quantfull.com/" className="hover:text-primary-600 transition-colors">
+                仓满量化主站：量化交易学习资料
+              </a>
+              <a href="https://www.quantfull.com/playbook" className="hover:text-primary-600 transition-colors">
+                实盘手册：因子研究到模拟交易
+              </a>
+              <a href="https://v.quantfull.com/" className="hover:text-primary-600 transition-colors">
+                Alpha101 因子三维可视化
+              </a>
+            </nav>
+            <p className="mt-3 text-xs text-gray-400 font-mono">
               Version: {__GIT_HASH__}
             </p>
           </div>
