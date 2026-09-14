@@ -1,9 +1,16 @@
 name: Auto Predict and Update
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  # Run every 24 hours
-  workflow_dispatch:      # Allow manual trigger
+  # [定时调度架构变更]
+  # 定时调度已由外部 Vercel Action Cron Hub 统一精准接管唤醒，彻底解决 GitHub schedule 队列延迟与丢单痛点。
+  # 调度中心仓库: https://github.com/kuhung/action-cron-hub
+  # 手动触发控制台: https://action-cron-hub.vercel.app/ (输入密钥后可直接在此网页上一键手动触发)
+  # 对应任务: taskId = k-online-predict (所属分组: morning-early)
+  # 执行时间: 每日 08:00 北京时间 (00:00 UTC)
+  # 此处保留 workflow_dispatch 供 Vercel 主动触发（或在当前仓库 Actions 页面手动 Run workflow），原生 schedule 已注释以防止双跑。
+  # schedule:
+  #   - cron: '0 0 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
